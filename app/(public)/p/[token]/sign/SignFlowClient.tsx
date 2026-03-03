@@ -11,7 +11,7 @@ import type { ProposalJSON } from '@/lib/seed'
 import type { FieldPosition } from '@/components/admin/PDFFieldPlacer'
 
 interface SignFlowClientProps {
-  signToken: string
+  signToken: string | undefined
   proposalToken: string
   proposal: {
     id: string
@@ -28,12 +28,14 @@ interface SignFlowClientProps {
     role: string | null
   }
   fieldPositions?: FieldPosition[]
+  /** Guest mode: no sign token, signer creates their own record at submit */
+  isGuest?: boolean
 }
 
 type IdentifyData = { name: string; email: string; phone?: string }
 
 export function SignFlowClient({
-  signToken, proposalToken, proposal, proposalJson, signer, fieldPositions = [],
+  signToken, proposalToken, proposal, proposalJson, signer, fieldPositions = [], isGuest = false,
 }: SignFlowClientProps) {
   const router = useRouter()
   const [step, setStep] = useState(1)
@@ -52,8 +54,31 @@ export function SignFlowClient({
   }) => {
     setSubmitting(true); setError(null)
     try {
+      let activeSignToken = signToken
+
+      // Guest flow: create a signer + signature_request first
+      if (isGuest || !activeSignToken) {
+        const guestRes = await fetch('/api/sign/guest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            proposalId: proposal.id,
+            name: identifyData?.name ?? '',
+            email: identifyData?.email ?? '',
+            role: identifyData?.phone ? `Phone: ${identifyData.phone}` : null,
+          }),
+        })
+        const guestData = await guestRes.json()
+        if (!guestData.success) {
+          setError(guestData.error ?? 'Failed to initiate signing')
+          setSubmitting(false)
+          return
+        }
+        activeSignToken = guestData.signToken
+      }
+
       const formData = new FormData()
-      formData.append('signToken', signToken)
+      formData.append('signToken', activeSignToken!)
       formData.append('signerName', identifyData?.name ?? signer.name)
       formData.append('signerEmail', identifyData?.email ?? signer.email)
       if (identifyData?.phone) formData.append('signerPhone', identifyData.phone)
@@ -65,7 +90,6 @@ export function SignFlowClient({
       formData.append('accepted', 'true')
       formData.append('acceptanceText', signData.acceptanceText)
       formData.append('userAgent', navigator.userAgent)
-      // Include text field values for stamping
       if (Object.keys(signData.textFieldValues).length > 0) {
         formData.append('textFieldValues', JSON.stringify(signData.textFieldValues))
       }
@@ -80,7 +104,7 @@ export function SignFlowClient({
       const result = await res.json()
 
       if (result.success) {
-        router.push(`/p/${proposalToken}/signed?st=${signToken}`)
+        router.push(`/p/${proposalToken}/signed?st=${activeSignToken}`)
       } else {
         setError(result.error ?? 'Signing failed. Please try again.')
       }
@@ -105,19 +129,23 @@ export function SignFlowClient({
     )
   }
 
+  const displaySigner = identifyData
+    ? { ...signer, name: identifyData.name, email: identifyData.email }
+    : signer
+
   return (
     <SignLayout proposalTitle={proposal.title} proposalToken={proposalToken} step={step} totalSteps={4}>
       {step === 1 && (
         <StepReview
           proposal={proposal as Parameters<typeof StepReview>[0]['proposal']}
           proposalJson={proposalJson}
-          signer={signer as Parameters<typeof StepReview>[0]['signer']}
+          signer={displaySigner as Parameters<typeof StepReview>[0]['signer']}
           onNext={() => setStep(2)}
         />
       )}
       {step === 2 && (
         <StepIdentify
-          signer={signer as Parameters<typeof StepIdentify>[0]['signer']}
+          signer={displaySigner as Parameters<typeof StepIdentify>[0]['signer']}
           onNext={handleIdentify}
           onBack={() => setStep(1)}
         />

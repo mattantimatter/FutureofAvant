@@ -44,8 +44,7 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
   }
 
   const hasVideo = !!content.videoUrl
-
-  // Sign link: always go to sign page. If no sign token, sign page will show instructions.
+  // Always go to the sign page — with token it's a personal link, without it's a guest flow
   const signHref = signToken
     ? `/p/${proposalToken}/sign?st=${signToken}`
     : `/p/${proposalToken}/sign`
@@ -54,7 +53,7 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
     <section
       id="section-hero"
       ref={heroRef}
-      className="section-anchor relative overflow-hidden"
+      className="section-anchor relative flex flex-col overflow-hidden"
       style={{ minHeight: '100vh' }}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
@@ -72,11 +71,11 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
         style={{ backgroundImage: 'linear-gradient(rgba(246,246,253,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(246,246,253,0.6) 1px, transparent 1px)', backgroundSize: '80px 80px' }}
         aria-hidden="true" />
 
-      {/* Main content — pt-28 centers headline between navbar and video */}
-      <div className="relative z-10 mx-auto max-w-main px-6 pt-28 pb-20 text-center">
+      {/* ── TOP: Logo + Headline — flex-1 vertically centered ───────── */}
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pt-8 pb-4 text-center">
 
         {/* Logo lockup */}
-        <div className="mb-6 flex items-center justify-center gap-5">
+        <div className="mb-5 flex items-center justify-center gap-5">
           <img src="/avant-logo.svg" alt="Avant"
             style={{ height: 26, width: 'auto', mixBlendMode: 'screen' }} loading="eager" />
           <span className="text-lg font-light text-white/25">×</span>
@@ -86,18 +85,20 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
           </div>
         </div>
 
-        {/* Headline — slightly smaller to give video room */}
-        <h1 className="mb-6 text-5xl font-bold leading-[1.05] tracking-tight text-white md:text-6xl lg:text-7xl">
+        {/* Headline */}
+        <h1 className="text-5xl font-bold leading-[1.05] tracking-tight text-white md:text-6xl lg:text-7xl">
           <StaggeredText text={content.title} className="block" />
           <span className="text-gradient mt-2 block">
             <StaggeredText text={content.subtitle} delay={180} />
           </span>
         </h1>
+      </div>
 
-        {/* ── VIDEO BLOCK — sits at fold, partially visible ─────────── */}
-        <div className="mb-0 flex flex-col items-center">
+      {/* ── BOTTOM: Video block anchored to lower section ─────────── */}
+      <div className="relative z-10 px-6 pb-20">
+        <div className="mx-auto flex max-w-3xl flex-col items-center">
           <div
-            className="relative w-full max-w-3xl overflow-hidden rounded-2xl border border-white/[0.10]"
+            className="relative w-full overflow-hidden rounded-2xl border border-white/[0.10]"
             style={{ boxShadow: '0 20px 80px rgba(0,0,0,0.7), 0 0 60px rgba(105,106,172,0.12)', aspectRatio: '16/9' }}
           >
             {hasVideo && isIframe(content.videoUrl!) ? (
@@ -132,19 +133,19 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
                 </div>
               </div>
             )}
-            {/* Bottom gradient — creates partial-visibility peek effect */}
+            {/* Bottom gradient fade — "peek" effect */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3"
               style={{ background: 'linear-gradient(to top, var(--background) 0%, transparent 100%)' }}
               aria-hidden="true" />
           </div>
         </div>
+      </div>
 
-        {/* Description */}
-        <p className="mx-auto mb-7 mt-10 max-w-2xl text-base font-light leading-relaxed text-white/75 md:text-lg">
+      {/* ── BELOW THE FOLD: Description, badges, CTAs, stats ─────── */}
+      <div className="relative z-10 mx-auto max-w-main px-6 pb-20 text-center">
+        <p className="mx-auto mb-7 mt-4 max-w-2xl text-base font-light leading-relaxed text-white/75 md:text-lg">
           {content.description}
         </p>
-
-        {/* Badges */}
         <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
           {content.badges.map((badge) => (
             <span key={badge} className="rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 text-xs font-medium text-white/70 backdrop-blur-sm">
@@ -152,21 +153,14 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
             </span>
           ))}
         </div>
-
-        {/* CTAs */}
         <div className="mb-10 flex flex-wrap items-center justify-center gap-4">
-          {/* Review & Sign — always links to esign page */}
-          <Link
-            href={signHref}
-            className="group inline-flex items-center justify-center gap-3 rounded-[40px] py-4 pl-8 pr-4 text-base font-semibold text-white shadow-lg transition-all duration-300 btn-primary"
-          >
+          <Link href={signHref}
+            className="group inline-flex items-center justify-center gap-3 rounded-[40px] py-4 pl-8 pr-4 text-base font-semibold text-white shadow-lg transition-all duration-300 btn-primary">
             <span>Review &amp; Sign</span>
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
               <ArrowRight size={16} />
             </span>
           </Link>
-
-          {/* Download PDF */}
           {sourcePdfDownloadUrl ? (
             <a href={sourcePdfDownloadUrl} download="avant-pathfinder-atom-proposal.pdf"
               target="_blank" rel="noopener noreferrer"
@@ -186,25 +180,20 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
             </button>
           )}
         </div>
-
-        {/* Stats */}
         <div className="mx-auto mb-10 grid max-w-lg grid-cols-2 gap-3 md:grid-cols-4">
           {content.stats.map((stat) => (
-            <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur-sm transition-all duration-200 hover:border-white/18 hover:bg-white/[0.08]">
+            <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur-sm transition-all hover:border-white/18 hover:bg-white/[0.08]">
               <div className="text-2xl font-bold text-white">{stat.value}</div>
               <div className="mt-1 text-xs font-light text-white/60">{stat.label}</div>
             </div>
           ))}
         </div>
-
-        {/* Scroll cue — pb-20 on the container gives it clearance from the section divider */}
         <div className="flex flex-col items-center gap-2 text-white/25">
           <span className="text-xs uppercase tracking-[0.2em]">Scroll to explore</span>
           <div className="flex h-8 w-5 items-start justify-center rounded-full border border-white/15 p-1">
             <div className="h-1.5 w-1 animate-bounce rounded-full bg-accent/70" />
           </div>
         </div>
-
       </div>
     </section>
   )
