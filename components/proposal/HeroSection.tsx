@@ -76,11 +76,16 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
       <div className="relative z-10 mx-auto max-w-main px-6 pt-28 pb-0 text-center">
 
         {/* Logo lockup */}
-        <div className="mb-8 flex items-center justify-center gap-4">
-          <div className="flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-2.5 backdrop-blur-sm">
-            <Image src="/avant-logo-white.png" alt="Avant" width={90} height={26} className="h-6 w-auto object-contain" priority />
-          </div>
+        <div className="mb-8 flex items-center justify-center gap-5">
+          {/* Avant SVG logo — mix-blend-mode:screen removes dark bg, keeps white letters + cyan A */}
+          <img
+            src="/avant-logo.svg"
+            alt="Avant"
+            style={{ height: 28, width: 'auto', mixBlendMode: 'screen' }}
+            loading="eager"
+          />
           <span className="text-lg font-light text-white/25">×</span>
+          {/* Antimatter logo box */}
           <div className="flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-2.5 backdrop-blur-sm">
             <Image src="/antimatter-logo.png" alt="Antimatter AI" width={140} height={26} className="h-6 w-auto object-contain brightness-[2] invert" priority />
           </div>
