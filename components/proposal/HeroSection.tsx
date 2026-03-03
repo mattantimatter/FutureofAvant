@@ -87,14 +87,78 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
         </div>
 
         {/* Headline */}
-        <h1 className="mb-6 text-5xl font-bold leading-[1.05] tracking-tight text-white md:text-7xl lg:text-8xl">
+        <h1 className="mb-8 text-5xl font-bold leading-[1.05] tracking-tight text-white md:text-7xl lg:text-8xl">
           <StaggeredText text={content.title} className="block" />
           <span className="text-gradient mt-2 block">
             <StaggeredText text={content.subtitle} delay={180} />
           </span>
         </h1>
 
-        {/* Description — light and very readable */}
+        {/* ── VIDEO BLOCK — directly below H1 ───────────────────── */}
+        <div className="mb-12 flex flex-col items-center gap-3">
+          <div
+            className="relative w-full max-w-3xl overflow-hidden rounded-2xl border border-white/[0.12]"
+            style={{
+              boxShadow: '0 20px 80px rgba(0,0,0,0.7), 0 0 60px rgba(105,106,172,0.12)',
+              aspectRatio: '16/9',
+            }}
+          >
+            {hasVideo && isIframe(content.videoUrl!) ? (
+              <iframe
+                src={content.videoUrl}
+                className="h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                title="Avant Pathfinder × ATOM — Introduction"
+              />
+            ) : hasVideo ? (
+              <div className="relative h-full w-full bg-black">
+                <video
+                  ref={videoRef}
+                  src={content.videoUrl}
+                  className="h-full w-full object-cover"
+                  controls={videoPlaying}
+                  playsInline
+                  preload="metadata"
+                  onPlay={() => setVideoPlaying(true)}
+                  onEnded={() => setVideoPlaying(false)}
+                />
+                {!videoPlaying && (
+                  <button
+                    onClick={handlePlayClick}
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px] transition-all hover:bg-black/30"
+                    aria-label="Play video"
+                  >
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-white/40 bg-white/10 backdrop-blur-sm transition-all hover:scale-110 hover:bg-white/20 hover:border-white/70">
+                      <Play size={32} className="translate-x-1 text-white" fill="white" />
+                    </div>
+                    <span className="text-sm font-medium text-white/80">Play Overview</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex h-full w-full flex-col items-center justify-center gap-5 bg-white/[0.03]">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-white/[0.05]">
+                  <Play size={32} className="translate-x-1 text-white/30" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-white/60">Hype Video Coming</p>
+                  <p className="mt-1.5 text-xs text-white/30">
+                    Set <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-accent/70">videoUrl</code> in seed.ts to your MP4 or embed URL
+                  </p>
+                </div>
+              </div>
+            )}
+            {/* Bottom fade — peek effect */}
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3"
+              style={{ background: 'linear-gradient(to top, var(--background) 0%, transparent 100%)' }}
+              aria-hidden="true"
+            />
+          </div>
+        </div>
+
+        {/* Description */}
         <p className="mx-auto mb-8 max-w-2xl text-base font-light leading-relaxed text-white/75 md:text-lg">
           {content.description}
         </p>
@@ -170,83 +234,11 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
           ))}
         </div>
 
-        {/* ── VIDEO BLOCK ─────────────────────────────────────────── */}
-        <div className="flex flex-col items-center gap-3">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/45">
-            {hasVideo ? 'Watch the overview' : 'Introduction video'}
-          </p>
-
-          <div
-            className="relative w-full max-w-3xl overflow-hidden rounded-2xl border border-white/[0.12]"
-            style={{
-              boxShadow: '0 20px 80px rgba(0,0,0,0.7), 0 0 60px rgba(105,106,172,0.12)',
-              aspectRatio: '16/9',
-            }}
-          >
-            {hasVideo && isIframe(content.videoUrl!) ? (
-              /* Iframe embed (YouTube / Vimeo / Loom) */
-              <iframe
-                src={content.videoUrl}
-                className="h-full w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                title="Avant Pathfinder × ATOM — Introduction"
-              />
-            ) : hasVideo ? (
-              /* Self-hosted MP4 */
-              <div className="relative h-full w-full bg-black">
-                <video
-                  ref={videoRef}
-                  src={content.videoUrl}
-                  className="h-full w-full object-cover"
-                  controls={videoPlaying}
-                  playsInline
-                  preload="metadata"
-                  onPlay={() => setVideoPlaying(true)}
-                  onEnded={() => setVideoPlaying(false)}
-                />
-                {!videoPlaying && (
-                  <button
-                    onClick={handlePlayClick}
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 backdrop-blur-[2px] transition-all hover:bg-black/30"
-                    aria-label="Play video"
-                  >
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-white/40 bg-white/10 backdrop-blur-sm transition-all hover:scale-110 hover:bg-white/20 hover:border-white/70">
-                      <Play size={32} className="translate-x-1 text-white" fill="white" />
-                    </div>
-                    <span className="text-sm font-medium text-white/80">Play Overview</span>
-                  </button>
-                )}
-              </div>
-            ) : (
-              /* Placeholder — video not yet uploaded */
-              <div className="flex h-full w-full flex-col items-center justify-center gap-5 bg-white/[0.03]">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-white/[0.05]">
-                  <Play size={32} className="translate-x-1 text-white/30" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-white/60">Hype Video Coming</p>
-                  <p className="mt-1.5 text-xs text-white/30">
-                    Set <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-accent/70">videoUrl</code> in seed.ts to your MP4 or embed URL
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Bottom gradient fade — "peek" scroll invitation */}
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5"
-              style={{ background: 'linear-gradient(to top, var(--background) 0%, transparent 100%)' }}
-              aria-hidden="true"
-            />
-          </div>
-
-          {/* Scroll cue */}
-          <div className="mt-2 flex flex-col items-center gap-2 text-white/25">
-            <span className="text-xs uppercase tracking-[0.2em]">Scroll to explore</span>
-            <div className="flex h-8 w-5 items-start justify-center rounded-full border border-white/15 p-1">
-              <div className="h-1.5 w-1 animate-bounce rounded-full bg-accent/70" />
-            </div>
+        {/* Scroll cue */}
+        <div className="mt-6 flex flex-col items-center gap-2 text-white/25">
+          <span className="text-xs uppercase tracking-[0.2em]">Scroll to explore</span>
+          <div className="flex h-8 w-5 items-start justify-center rounded-full border border-white/15 p-1">
+            <div className="h-1.5 w-1 animate-bounce rounded-full bg-accent/70" />
           </div>
         </div>
 
