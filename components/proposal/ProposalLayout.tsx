@@ -54,6 +54,11 @@ function renderSection(section: ProposalSection, proposalToken: string, signToke
 const statusVariant: Record<string, 'green' | 'amber' | 'accent'> = {
   signed: 'green', sent: 'amber', draft: 'accent',
 }
+const statusLabel: Record<string, string> = {
+  signed: 'Signed',
+  sent: 'For Review',
+  draft: 'Draft',
+}
 
 export function ProposalLayout({ proposal, proposalJson, signToken }: ProposalLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -84,7 +89,7 @@ export function ProposalLayout({ proposal, proposalJson, signToken }: ProposalLa
               <p className="text-xs text-foreground/40">{proposal.client_name}</p>
             </div>
             <Badge variant={statusVariant[proposal.status] ?? 'accent'} size="sm" className="hidden sm:inline-flex">
-              {proposal.status}
+              {statusLabel[proposal.status] ?? proposal.status}
             </Badge>
           </div>
           <div className="flex items-center gap-2">

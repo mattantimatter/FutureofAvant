@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, Download } from 'lucide-react'
 import { StaggeredText } from '@/components/reactbits/StaggeredText'
 
@@ -26,9 +27,10 @@ export function HeroSection({ content, proposalToken, signToken }: HeroSectionPr
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     const rect = heroRef.current?.getBoundingClientRect()
     if (!rect) return
-    const x = ((e.clientX - rect.left) / rect.width) * 100
-    const y = ((e.clientY - rect.top) / rect.height) * 100
-    setMousePos({ x, y })
+    setMousePos({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    })
   }
 
   return (
@@ -40,62 +42,55 @@ export function HeroSection({ content, proposalToken, signToken }: HeroSectionPr
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Static ambient background */}
+      {/* Ambient background */}
       <div className="absolute inset-0" aria-hidden="true">
-        <div
-          className="absolute inset-0 transition-opacity duration-700"
-          style={{
-            background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(62,63,126,0.18) 0%, transparent 70%)',
-          }}
-        />
-        <div
-          className="absolute inset-0 animate-aurora-1"
-          style={{
-            background: 'radial-gradient(ellipse 50% 40% at 80% 60%, rgba(105,106,172,0.07) 0%, transparent 70%)',
-            filter: 'blur(40px)',
-          }}
-        />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(62,63,126,0.20) 0%, transparent 70%)' }} />
+        <div className="absolute inset-0 animate-aurora-1" style={{ background: 'radial-gradient(ellipse 50% 40% at 80% 60%, rgba(105,106,172,0.07) 0%, transparent 70%)', filter: 'blur(40px)' }} />
       </div>
 
-      {/* Cursor-following glow — the interactive hover effect */}
+      {/* Cursor-following glow */}
       <div
         className="pointer-events-none absolute inset-0 transition-opacity duration-500"
-        style={{
-          opacity: isHovered ? 1 : 0,
-          background: `radial-gradient(ellipse 55% 45% at ${mousePos.x}% ${mousePos.y}%, rgba(105,106,172,0.14) 0%, rgba(62,63,126,0.06) 40%, transparent 70%)`,
-        }}
+        style={{ opacity: isHovered ? 1 : 0, background: `radial-gradient(ellipse 55% 45% at ${mousePos.x}% ${mousePos.y}%, rgba(105,106,172,0.13) 0%, rgba(62,63,126,0.05) 40%, transparent 70%)` }}
         aria-hidden="true"
       />
 
-      {/* Subtle grid overlay */}
+      {/* Subtle grid */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.025]"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(246,246,253,0.6) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(246,246,253,0.6) 1px, transparent 1px)
-          `,
-          backgroundSize: '80px 80px',
-        }}
+        className="pointer-events-none absolute inset-0 opacity-[0.022]"
+        style={{ backgroundImage: 'linear-gradient(rgba(246,246,253,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(246,246,253,0.6) 1px, transparent 1px)', backgroundSize: '80px 80px' }}
         aria-hidden="true"
       />
 
       {/* Bottom fade */}
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-40"
-        style={{ background: 'linear-gradient(to top, var(--background) 0%, transparent 100%)' }}
-        aria-hidden="true"
-      />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40" style={{ background: 'linear-gradient(to top, var(--background) 0%, transparent 100%)' }} aria-hidden="true" />
 
       <div className="relative z-10 mx-auto max-w-main px-6 py-36 text-center">
-        {/* Lockup */}
-        <div className="mb-8 flex items-center justify-center gap-4">
-          <div className="rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-4 py-2 backdrop-blur-sm">
-            <span className="text-xs font-bold uppercase tracking-widest text-tertiary">Avant</span>
+
+        {/* Logo lockup — AVANT logo + ANTIMATTER logo */}
+        <div className="mb-10 flex items-center justify-center gap-5">
+          {/* Avant logo box */}
+          <div className="flex items-center gap-2.5 rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-5 py-3 backdrop-blur-sm">
+            <Image
+              src="/avant-logo.png"
+              alt="Avant"
+              width={88}
+              height={28}
+              className="h-7 w-auto object-contain"
+              priority
+            />
           </div>
-          <span className="text-foreground/20 text-lg">×</span>
-          <div className="rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-4 py-2 backdrop-blur-sm">
-            <span className="text-xs font-bold uppercase tracking-widest text-secondary">Antimatter AI</span>
+          <span className="text-xl font-light text-foreground/20">×</span>
+          {/* Antimatter logo box */}
+          <div className="flex items-center gap-2.5 rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-5 py-3 backdrop-blur-sm">
+            <Image
+              src="/antimatter-logo.png"
+              alt="Antimatter AI"
+              width={140}
+              height={28}
+              className="h-7 w-auto object-contain brightness-[1.8] invert"
+              priority
+            />
           </div>
         </div>
 
@@ -115,10 +110,7 @@ export function HeroSection({ content, proposalToken, signToken }: HeroSectionPr
         {/* Badges */}
         <div className="mb-12 flex flex-wrap items-center justify-center gap-2">
           {content.badges.map((badge) => (
-            <span
-              key={badge}
-              className="rounded-full border border-foreground/[0.08] bg-foreground/[0.03] px-3.5 py-1.5 text-xs font-medium text-foreground/50 backdrop-blur-sm"
-            >
+            <span key={badge} className="rounded-full border border-foreground/[0.08] bg-foreground/[0.03] px-3.5 py-1.5 text-xs font-medium text-foreground/50 backdrop-blur-sm">
               {badge}
             </span>
           ))}
@@ -137,7 +129,7 @@ export function HeroSection({ content, proposalToken, signToken }: HeroSectionPr
               </span>
             </Link>
           ) : (
-            <button className="group inline-flex items-center justify-center gap-3 rounded-[40px] py-3.5 pl-7 pr-4 font-medium text-foreground/60 btn-primary opacity-50 cursor-not-allowed">
+            <button className="group inline-flex cursor-not-allowed items-center justify-center gap-3 rounded-[40px] py-3.5 pl-7 pr-4 font-medium text-foreground/50 btn-primary opacity-40">
               <span>Review &amp; Sign</span>
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20">
                 <ArrowRight size={15} />
@@ -158,10 +150,7 @@ export function HeroSection({ content, proposalToken, signToken }: HeroSectionPr
         {/* Stats */}
         <div className="mx-auto grid max-w-lg grid-cols-2 gap-3 md:grid-cols-4">
           {content.stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-2xl border border-foreground/[0.07] bg-foreground/[0.02] p-4 backdrop-blur-sm transition-all duration-200 hover:border-foreground/[0.12] hover:bg-foreground/[0.04]"
-            >
+            <div key={stat.label} className="rounded-2xl border border-foreground/[0.07] bg-foreground/[0.02] p-4 backdrop-blur-sm transition-all duration-200 hover:border-foreground/[0.12] hover:bg-foreground/[0.04]">
               <div className="text-2xl font-bold text-foreground">{stat.value}</div>
               <div className="mt-1 text-xs font-light text-foreground/35">{stat.label}</div>
             </div>

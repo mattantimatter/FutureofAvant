@@ -18,7 +18,26 @@ export function AskAtomRail({ proposalToken, className }: { proposalToken: strin
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(true)
+  const [highlighted, setHighlighted] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Listen for the focus-atom event from Next Steps
+  React.useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const handler = () => {
+      setOpen(true)
+      setHighlighted(true)
+      setTimeout(() => {
+        inputRef.current?.focus()
+        setHighlighted(false)
+      }, 600)
+    }
+    el.addEventListener('focus-atom', handler)
+    return () => el.removeEventListener('focus-atom', handler)
+  }, [])
 
   const send = async (text: string) => {
     if (!text.trim() || loading) return
@@ -53,7 +72,15 @@ export function AskAtomRail({ proposalToken, className }: { proposalToken: strin
   }
 
   return (
-    <div className={cn('flex h-[490px] flex-col rounded-2xl border border-foreground/10 bg-foreground/[0.02]', className)}>
+    <div
+      id="ask-atom-rail"
+      ref={containerRef}
+      className={cn(
+        'flex h-[490px] flex-col rounded-2xl border bg-foreground/[0.02] transition-all duration-500',
+        highlighted ? 'border-accent/60 shadow-[0_0_30px_rgba(105,106,172,0.25)]' : 'border-foreground/10',
+        className
+      )}
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-foreground/[0.06] px-4 py-3">
         <div className="flex items-center gap-2">
@@ -148,7 +175,8 @@ export function AskAtomRail({ proposalToken, className }: { proposalToken: strin
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send(input)}
             placeholder="Ask about ATOM..."
-            className="flex-1 rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-xs text-foreground placeholder-foreground/25 outline-none focus:border-accent/40"
+            ref={inputRef}
+          className="flex-1 rounded-lg border border-foreground/[0.08] bg-transparent px-3 py-2 text-xs text-foreground placeholder-foreground/25 outline-none focus:border-accent/40"
           />
           <button
             onClick={() => send(input)}

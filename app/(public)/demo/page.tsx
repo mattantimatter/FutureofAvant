@@ -25,7 +25,7 @@ const demoProposal: Proposal = {
   id: 'demo',
   title: 'Avant × Antimatter — ATOM Deployment Proposal',
   client_name: 'Avant',
-  status: 'sent',
+  status: 'sent', // displays as "For Review" to customer
   public_token: 'demo',
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   proposal_json: defaultProposalJSON as any,
