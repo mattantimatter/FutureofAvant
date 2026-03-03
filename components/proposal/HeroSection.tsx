@@ -72,8 +72,8 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
         style={{ backgroundImage: 'linear-gradient(rgba(246,246,253,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(246,246,253,0.6) 1px, transparent 1px)', backgroundSize: '80px 80px' }}
         aria-hidden="true" />
 
-      {/* Main content — reduced top padding so video peeks at fold */}
-      <div className="relative z-10 mx-auto max-w-main px-6 pt-16 pb-20 text-center">
+      {/* Main content — pt-28 centers headline between navbar and video */}
+      <div className="relative z-10 mx-auto max-w-main px-6 pt-28 pb-20 text-center">
 
         {/* Logo lockup */}
         <div className="mb-6 flex items-center justify-center gap-5">
