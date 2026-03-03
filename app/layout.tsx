@@ -14,6 +14,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://avant-atom-proposa
 
 export const metadata: Metadata = {
   title: 'Avant Pathfinder × Antimatter AI — ATOM Deployment Proposal',
+  icons: { icon: '/icon.png', apple: '/icon.png' },
   description:
     'A comprehensive upgrade of Pathfinder\'s IQA, Competitive Matrices, and Atlas through Antimatter AI\'s ATOM agentic platform. Transform Trusted Advisor discovery through agentic AI.',
   metadataBase: new URL(SITE_URL),
