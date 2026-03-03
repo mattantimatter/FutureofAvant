@@ -71,26 +71,26 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
 
         {/* Logo lockup — AVANT logo + ANTIMATTER logo */}
         <div className="mb-10 flex items-center justify-center gap-5">
-          {/* Avant logo box */}
-          <div className="flex items-center gap-2.5 rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-5 py-3 backdrop-blur-sm">
+          {/* Avant logo box — white wordmark, black bg blends with page */}
+          <div className="flex items-center justify-center rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-5 py-3 backdrop-blur-sm">
             <Image
-              src="/avant-logo.png"
+              src="/avant-logo-white.png"
               alt="Avant"
-              width={88}
-              height={28}
+              width={100}
+              height={30}
               className="h-7 w-auto object-contain"
               priority
             />
           </div>
           <span className="text-xl font-light text-foreground/20">×</span>
           {/* Antimatter logo box */}
-          <div className="flex items-center gap-2.5 rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-5 py-3 backdrop-blur-sm">
+          <div className="flex items-center justify-center rounded-xl border border-foreground/[0.08] bg-foreground/[0.03] px-5 py-3 backdrop-blur-sm">
             <Image
               src="/antimatter-logo.png"
               alt="Antimatter AI"
-              width={140}
-              height={28}
-              className="h-7 w-auto object-contain brightness-[1.8] invert"
+              width={150}
+              height={30}
+              className="h-7 w-auto object-contain brightness-[2] invert"
               priority
             />
           </div>

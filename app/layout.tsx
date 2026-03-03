@@ -10,15 +10,34 @@ const font = Plus_Jakarta_Sans({
   display: 'swap',
 })
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://avant-atom-proposal.vercel.app'
+
 export const metadata: Metadata = {
-  title: 'Avant × Antimatter — ATOM Proposal',
+  title: 'Avant Pathfinder × Antimatter AI — ATOM Deployment Proposal',
   description:
-    "Interactive enterprise AI deployment proposal powered by Antimatter AI's ATOM framework.",
+    'A comprehensive upgrade of Pathfinder\'s IQA, Competitive Matrices, and Atlas through Antimatter AI\'s ATOM agentic platform. Transform Trusted Advisor discovery through agentic AI.',
+  metadataBase: new URL(SITE_URL),
   openGraph: {
-    title: 'Avant × Antimatter — ATOM Deployment Proposal',
+    title: 'Avant Pathfinder × Antimatter AI — ATOM Deployment Proposal',
     description:
-      'Deploy governed enterprise AI across voice, search, and workflows — in your infrastructure.',
+      'Deploy agentic AI into Pathfinder\'s IQA, Competitive Matrices, and Atlas. Real-time discovery, same-session recommendations, and geospatial fiber intelligence.',
     siteName: 'Antimatter AI',
+    url: SITE_URL,
+    type: 'website',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1280,
+        height: 800,
+        alt: 'Antimatter AI — Building Enterprise AI that Makes Sense',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Avant Pathfinder × Antimatter AI — ATOM Deployment Proposal',
+    description: 'Deploy agentic AI into Pathfinder. IQA + Competitive Matrices + Atlas geospatial intelligence.',
+    images: ['/og-image.png'],
   },
 }
 
