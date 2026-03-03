@@ -6,9 +6,9 @@ import { SignLayout } from '@/components/esign/SignLayout'
 import { StepReview } from '@/components/esign/StepReview'
 import { StepIdentify } from '@/components/esign/StepIdentify'
 import { StepSign } from '@/components/esign/StepSign'
-import { Button } from '@/components/ui/Button'
-import { CheckCircle, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import type { ProposalJSON } from '@/lib/seed'
+import type { FieldPosition } from '@/components/admin/PDFFieldPlacer'
 
 interface SignFlowClientProps {
   signToken: string
@@ -27,22 +27,13 @@ interface SignFlowClientProps {
     email: string
     role: string | null
   }
+  fieldPositions?: FieldPosition[]
 }
 
 type IdentifyData = { name: string; email: string; phone?: string }
-type SignData = {
-  signature: { type: 'typed' | 'drawn'; text?: string; dataURL?: string }
-  initials: { type: 'typed' | 'drawn'; text?: string; dataURL?: string }
-  accepted: boolean
-  acceptanceText: string
-}
 
 export function SignFlowClient({
-  signToken,
-  proposalToken,
-  proposal,
-  proposalJson,
-  signer,
+  signToken, proposalToken, proposal, proposalJson, signer, fieldPositions = [],
 }: SignFlowClientProps) {
   const router = useRouter()
   const [step, setStep] = useState(1)
@@ -50,15 +41,16 @@ export function SignFlowClient({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleIdentify = (data: IdentifyData) => {
-    setIdentifyData(data)
-    setStep(3)
-  }
+  const handleIdentify = (data: IdentifyData) => { setIdentifyData(data); setStep(3) }
 
-  const handleSign = async (signData: SignData) => {
-    setSubmitting(true)
-    setError(null)
-
+  const handleSign = async (signData: {
+    signature: { type: 'typed' | 'drawn'; text?: string; dataURL?: string }
+    initials: { type: 'typed' | 'drawn'; text?: string; dataURL?: string }
+    accepted: boolean
+    acceptanceText: string
+    textFieldValues: Record<string, string>
+  }) => {
+    setSubmitting(true); setError(null)
     try {
       const formData = new FormData()
       formData.append('signToken', signToken)
@@ -73,21 +65,18 @@ export function SignFlowClient({
       formData.append('accepted', 'true')
       formData.append('acceptanceText', signData.acceptanceText)
       formData.append('userAgent', navigator.userAgent)
+      // Include text field values for stamping
+      if (Object.keys(signData.textFieldValues).length > 0) {
+        formData.append('textFieldValues', JSON.stringify(signData.textFieldValues))
+      }
 
-      // Get IP from our API
       try {
         const ipRes = await fetch('/api/audit')
         const ipData = await ipRes.json()
         if (ipData.ip) formData.append('ipAddress', ipData.ip)
-      } catch {
-        // IP capture is best-effort
-      }
+      } catch { /* IP best-effort */ }
 
-      const res = await fetch('/api/sign/finalize', {
-        method: 'POST',
-        body: formData,
-      })
-
+      const res = await fetch('/api/sign/finalize', { method: 'POST', body: formData })
       const result = await res.json()
 
       if (result.success) {
@@ -95,7 +84,7 @@ export function SignFlowClient({
       } else {
         setError(result.error ?? 'Signing failed. Please try again.')
       }
-    } catch (e) {
+    } catch {
       setError('An unexpected error occurred. Please try again.')
     } finally {
       setSubmitting(false)
@@ -104,25 +93,20 @@ export function SignFlowClient({
 
   if (submitting) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-navy">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/15">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10">
             <Loader2 size={28} className="animate-spin text-secondary" />
           </div>
-          <h2 className="mb-2 text-lg font-bold text-white">Processing your signature</h2>
-          <p className="text-sm text-slate-400">Generating signed PDF and recording audit trail...</p>
+          <h2 className="mb-2 text-lg font-semibold text-foreground">Processing your signature</h2>
+          <p className="text-sm font-light text-foreground/40">Generating signed PDF and recording audit trail...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <SignLayout
-      proposalTitle={proposal.title}
-      proposalToken={proposalToken}
-      step={step}
-      totalSteps={4}
-    >
+    <SignLayout proposalTitle={proposal.title} proposalToken={proposalToken} step={step} totalSteps={4}>
       {step === 1 && (
         <StepReview
           proposal={proposal as Parameters<typeof StepReview>[0]['proposal']}
@@ -143,11 +127,12 @@ export function SignFlowClient({
           <StepSign
             signerName={identifyData?.name ?? signer.name}
             acceptanceClause={proposalJson.acceptanceClause}
+            fieldPositions={fieldPositions}
             onNext={handleSign}
             onBack={() => setStep(2)}
           />
           {error && (
-            <div className="mx-6 mb-6 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">
+            <div className="mx-6 mb-6 rounded-xl border border-red-500/15 bg-red-500/5 p-3 text-sm text-red-400">
               {error}
             </div>
           )}

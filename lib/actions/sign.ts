@@ -69,7 +69,7 @@ export async function submitSignature(formData: FormData): Promise<SubmitSignatu
 
   const proposal = sigReq.proposals as unknown as { id: string; source_pdf_path: string | null; proposal_json: ProposalJSON; public_token: string }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fieldPositions = (sigReq as any).field_positions as Array<{ id: string; type: 'signature' | 'initials'; page: number; x: number; y: number; width: number; height: number }> | null
+  const fieldPositions = (sigReq as any).field_positions as Array<{ id: string; type: 'signature' | 'initials' | 'text' | 'date' | 'admin_signature'; page: number; x: number; y: number; width: number; height: number; label?: string; value?: string; dataURL?: string }> | null
   const signedAt = new Date().toISOString()
 
   // Upload drawn signature image to storage if present
@@ -91,6 +91,19 @@ export async function submitSignature(formData: FormData): Promise<SubmitSignatu
   // Generate / stamp signed PDF
   let signedPdfPath: string | null = null
   try {
+    // Merge signer's text field values into the field positions before stamping
+    const textFieldValues = formData.get('textFieldValues')
+    let mergedFieldPositions = fieldPositions ?? undefined
+    if (textFieldValues && mergedFieldPositions) {
+      try {
+        const vals = JSON.parse(textFieldValues as string) as Record<string, string>
+        mergedFieldPositions = mergedFieldPositions.map((f) => ({
+          ...f,
+          ...(f.type === 'text' && vals[f.id] ? { signerValue: vals[f.id] } : {}),
+        }))
+      } catch { /* ignore parse errors */ }
+    }
+
     const signatureBlock = {
       signerName: data.signerName,
       signerEmail: data.signerEmail,
@@ -101,7 +114,7 @@ export async function submitSignature(formData: FormData): Promise<SubmitSignatu
       initialsText: data.initialsText,
       ipAddress: data.ipAddress,
       acceptanceText: data.acceptanceText,
-      fieldPositions: fieldPositions ?? undefined,
+      fieldPositions: mergedFieldPositions,
     }
 
     let pdfBytes: Uint8Array

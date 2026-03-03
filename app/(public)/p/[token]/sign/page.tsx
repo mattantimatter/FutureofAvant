@@ -41,6 +41,8 @@ export default async function SignPage({ params, searchParams }: PageProps) {
   }
 
   const signer = sigReq.signers as unknown as { id: string; name: string; email: string; role: string | null }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fieldPositions = (sigReq as any).field_positions ?? []
 
   return (
     <SignFlowClient
@@ -49,6 +51,7 @@ export default async function SignPage({ params, searchParams }: PageProps) {
       proposal={sigReq.proposals as Parameters<typeof SignFlowClient>[0]['proposal']}
       proposalJson={proposal.proposal_json}
       signer={signer}
+      fieldPositions={fieldPositions}
     />
   )
 }

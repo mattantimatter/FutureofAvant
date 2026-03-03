@@ -66,6 +66,9 @@ async function stampAtFieldPositions(pdfDoc: PDFDocument, block: SignatureBlock)
   const regular = await pdfDoc.embedFont(StandardFonts.Helvetica)
   const pages = pdfDoc.getPages()
   const signedDate = new Date(block.signedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const accent = rgb(0.41, 0.416, 0.674)
+  const dark = rgb(0.08, 0.08, 0.15)
+  const gray = rgb(0.4, 0.4, 0.5)
 
   for (const field of block.fieldPositions ?? []) {
     const pageIndex = field.page - 1
@@ -73,28 +76,64 @@ async function stampAtFieldPositions(pdfDoc: PDFDocument, block: SignatureBlock)
     const page = pages[pageIndex]
     const { x, y, width: w, height: h } = field
 
-    page.drawRectangle({ x, y, width: w, height: h, color: rgb(0.96, 0.965, 0.992), borderColor: rgb(0.41, 0.416, 0.674), borderWidth: 1, opacity: 0.92 })
-
     if (field.type === 'signature') {
+      // Background box
+      page.drawRectangle({ x, y, width: w, height: h, color: rgb(0.96, 0.965, 0.992), borderColor: accent, borderWidth: 1, opacity: 0.92 })
       if (block.signatureType === 'drawn' && block.signatureDataURL) {
         try {
-          const base64 = block.signatureDataURL.replace(/^data:image\/\w+;base64,/, '')
-          const img = await pdfDoc.embedPng(Buffer.from(base64, 'base64'))
+          const img = await pdfDoc.embedPng(Buffer.from(block.signatureDataURL.replace(/^data:image\/\w+;base64,/, ''), 'base64'))
           const dims = img.scaleToFit(w - 8, h - 18)
           page.drawImage(img, { x: x + 4, y: y + 12, width: dims.width, height: dims.height })
-        } catch {
-          drawTypedSig(page, block.signatureText ?? block.signerName, x, y, w, h, bold)
-        }
+        } catch { drawTypedSig(page, block.signatureText ?? block.signerName, x, y, w, h, bold) }
       } else {
         drawTypedSig(page, block.signatureText ?? block.signerName, x, y, w, h, bold)
       }
-      page.drawLine({ start: { x: x + 4, y: y + 10 }, end: { x: x + w - 4, y: y + 10 }, thickness: 0.5, color: rgb(0.41, 0.416, 0.674) })
-      page.drawText(`${block.signerName} · ${signedDate}`, { x: x + 4, y: y + 2, font: regular, size: 5.5, color: rgb(0.4, 0.4, 0.5) })
-    } else {
+      page.drawLine({ start: { x: x + 4, y: y + 10 }, end: { x: x + w - 4, y: y + 10 }, thickness: 0.5, color: accent })
+      page.drawText(`${block.signerName} · ${signedDate}`, { x: x + 4, y: y + 2, font: regular, size: 5.5, color: gray })
+
+    } else if (field.type === 'initials') {
+      page.drawRectangle({ x, y, width: w, height: h, color: rgb(0.93, 0.99, 0.96), borderColor: rgb(0.1, 0.7, 0.5), borderWidth: 1, opacity: 0.92 })
       const initials = block.initialsText ?? block.signerName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
       const fontSize = Math.min(h * 0.5, 20)
-      page.drawText(initials, { x: x + w / 2 - initials.length * fontSize * 0.32, y: y + h / 2 - fontSize * 0.35, font: bold, size: fontSize, color: rgb(0.1, 0.1, 0.15) })
-      page.drawLine({ start: { x: x + 4, y: y + 8 }, end: { x: x + w - 4, y: y + 8 }, thickness: 0.5, color: rgb(0.41, 0.416, 0.674) })
+      page.drawText(initials, { x: x + w / 2 - initials.length * fontSize * 0.32, y: y + h / 2 - fontSize * 0.35, font: bold, size: fontSize, color: dark })
+      page.drawLine({ start: { x: x + 4, y: y + 8 }, end: { x: x + w - 4, y: y + 8 }, thickness: 0.5, color: rgb(0.1, 0.7, 0.5) })
+
+    } else if (field.type === 'text') {
+      // Text field — filled in by signer, stored in field.value at signing time
+      const textVal = (field as typeof field & { signerValue?: string }).signerValue ?? ''
+      page.drawRectangle({ x, y, width: w, height: h, color: rgb(1, 0.98, 0.94), borderColor: rgb(0.9, 0.65, 0.1), borderWidth: 1, opacity: 0.92 })
+      if (textVal) {
+        const fs = Math.min(h * 0.5, 11)
+        page.drawText(textVal, { x: x + 4, y: y + h / 2 - fs * 0.35, font: regular, size: fs, color: dark })
+      }
+      // Label underline
+      if (field.label) {
+        page.drawText(field.label, { x: x + 4, y: y + 2, font: regular, size: 5.5, color: rgb(0.6, 0.5, 0.2) })
+      }
+      page.drawLine({ start: { x: x + 4, y: y + 10 }, end: { x: x + w - 4, y: y + 10 }, thickness: 0.5, color: rgb(0.9, 0.65, 0.1) })
+
+    } else if (field.type === 'date') {
+      page.drawRectangle({ x, y, width: w, height: h, color: rgb(0.94, 0.97, 1), borderColor: rgb(0.23, 0.51, 0.96), borderWidth: 1, opacity: 0.92 })
+      const dateText = signedDate
+      const fs = Math.min(h * 0.42, 10)
+      page.drawText(dateText, { x: x + 4, y: y + h / 2 - fs * 0.35, font: regular, size: fs, color: dark })
+      page.drawText('Date Signed', { x: x + 4, y: y + 2, font: regular, size: 5.5, color: rgb(0.3, 0.5, 0.8) })
+      page.drawLine({ start: { x: x + 4, y: y + 10 }, end: { x: x + w - 4, y: y + 10 }, thickness: 0.5, color: rgb(0.23, 0.51, 0.96) })
+
+    } else if (field.type === 'admin_signature') {
+      // Pre-stamped admin/sender signature
+      page.drawRectangle({ x, y, width: w, height: h, color: rgb(0.97, 0.95, 1), borderColor: rgb(0.55, 0.36, 1), borderWidth: 1, opacity: 0.92 })
+      if (field.dataURL) {
+        try {
+          const img = await pdfDoc.embedPng(Buffer.from(field.dataURL.replace(/^data:image\/\w+;base64,/, ''), 'base64'))
+          const dims = img.scaleToFit(w - 8, h - 18)
+          page.drawImage(img, { x: x + 4, y: y + 12, width: dims.width, height: dims.height })
+        } catch { drawTypedSig(page, field.value ?? 'Admin', x, y, w, h, bold) }
+      } else if (field.value) {
+        drawTypedSig(page, field.value, x, y, w, h, bold)
+      }
+      page.drawLine({ start: { x: x + 4, y: y + 10 }, end: { x: x + w - 4, y: y + 10 }, thickness: 0.5, color: rgb(0.55, 0.36, 1) })
+      page.drawText('Sender Signature', { x: x + 4, y: y + 2, font: regular, size: 5.5, color: rgb(0.5, 0.35, 0.8) })
     }
   }
 }
