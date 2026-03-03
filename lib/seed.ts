@@ -62,6 +62,11 @@ By signing, I confirm I have the authority to enter into this agreement on behal
           { label: 'Review & Sign', href: '#sign', primary: true },
           { label: 'Download PDF', href: '#download', primary: false },
         ],
+        // TODO: Replace with your Loom / YouTube / Vimeo embed URL
+        // YouTube: https://www.youtube.com/embed/YOUR_VIDEO_ID
+        // Loom:    https://www.loom.com/embed/YOUR_LOOM_ID
+        // Vimeo:   https://player.vimeo.com/video/YOUR_VIDEO_ID
+        videoUrl: '',
       },
     },
 
@@ -592,6 +597,7 @@ By signing, I confirm I have the authority to enter into this agreement on behal
         contacts: [
           { name: 'Matt Bravo', role: 'CMO, Antimatter AI', email: 'matt@antimatterai.com' },
           { name: 'Paul Wallace', role: 'CTO, Antimatter AI', email: 'paul@antimatterai.com' },
+          { name: 'Ben O\'Leary', role: 'Co-Founder & Strategic Architect, Antimatter AI', email: 'ben@antimatterai.com' },
         ],
         validUntil: 'April 1, 2026',
         urgencyItems: [

@@ -14,6 +14,7 @@ interface HeroSectionProps {
     badges: string[]
     stats: Array<{ label: string; value: string }>
     ctas: Array<{ label: string; href: string; primary: boolean }>
+    videoUrl?: string
   }
   proposalToken: string
   signToken?: string
@@ -174,13 +175,55 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
           ))}
         </div>
 
-        {/* Scroll cue */}
-        <div className="mt-24 flex flex-col items-center gap-2 text-foreground/20">
-          <span className="text-xs uppercase tracking-[0.2em]">Scroll to explore</span>
-          <div className="flex h-8 w-5 items-start justify-center rounded-full border border-foreground/15 p-1">
-            <div className="h-1.5 w-1 animate-bounce rounded-full bg-accent/60" />
+        {/* Video block — half-visible at bottom of hero viewport */}
+        <div className="mt-16 flex flex-col items-center gap-3">
+          <p className="text-xs uppercase tracking-[0.2em] text-foreground/30">Watch the overview</p>
+          <div
+            className="relative w-full max-w-3xl overflow-hidden rounded-2xl border border-foreground/[0.10]"
+            style={{
+              boxShadow: '0 8px 60px rgba(0,0,0,0.6), 0 0 40px rgba(105,106,172,0.10)',
+              aspectRatio: '16/9',
+            }}
+          >
+            {content.videoUrl ? (
+              <iframe
+                src={content.videoUrl}
+                className="h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                title="Avant Pathfinder × ATOM — Introduction"
+              />
+            ) : (
+              /* Placeholder shown until a video URL is added in seed.ts */
+              <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-foreground/[0.03]">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-foreground/[0.10] bg-foreground/[0.04] transition-all hover:bg-accent/10">
+                  <svg className="h-7 w-7 translate-x-0.5 text-foreground/40" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-foreground/50">Introduction Video</p>
+                  <p className="mt-1 text-xs text-foreground/25">Add your Loom, YouTube, or Vimeo URL in <code className="text-accent/60">lib/seed.ts</code></p>
+                </div>
+              </div>
+            )}
+            {/* Bottom gradient fade — creates the "half visible" peek effect */}
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3"
+              style={{ background: 'linear-gradient(to top, var(--background) 0%, transparent 100%)' }}
+              aria-hidden="true"
+            />
+          </div>
+
+          {/* Scroll cue sits below the video */}
+          <div className="mt-4 flex flex-col items-center gap-2 text-foreground/20">
+            <span className="text-xs uppercase tracking-[0.2em]">Scroll to explore</span>
+            <div className="flex h-8 w-5 items-start justify-center rounded-full border border-foreground/15 p-1">
+              <div className="h-1.5 w-1 animate-bounce rounded-full bg-accent/60" />
+            </div>
           </div>
         </div>
+
       </div>
     </section>
   )
