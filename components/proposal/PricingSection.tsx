@@ -160,7 +160,7 @@ export function PricingSection({ content, proposalToken, signToken }: PricingSec
                 <div key={m.label} className="bg-background p-4">
                   <div className="text-xl font-bold text-secondary">{m.value}</div>
                   <div className="mt-0.5 text-xs font-medium text-foreground/60">{m.label}</div>
-                  {m.note && <div className="mt-1 text-xs font-light text-foreground/30">{m.note}</div>}
+                  {m.note && <div className="mt-1 text-xs font-light text-foreground/75">{m.note}</div>}
                 </div>
               ))}
             </div>

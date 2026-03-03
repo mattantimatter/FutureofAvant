@@ -60,6 +60,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── Proposal section readability boost ─────────────────────── */
+/* Lift muted text opacity globally inside proposal sections */
+.proposal-section p,
+.proposal-section li,
+.proposal-section span:not(.tag-pill):not(.font-bold):not(.font-semibold) {
+  --tw-text-opacity: 1;
+}
+
+/* Section card backgrounds slightly more visible */
+.proposal-section .glass-card,
+.proposal-section [class*="bg-foreground/[0.02]"],
+.proposal-section [class*="bg-foreground/[0.03]"] {
+  background: rgba(246, 246, 253, 0.05);
+}
+
 /* ================================================
    Scrollbar
    ================================================ */

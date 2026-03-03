@@ -17,9 +17,10 @@ interface HeroSectionProps {
   }
   proposalToken: string
   signToken?: string
+  sourcePdfDownloadUrl?: string | null
 }
 
-export function HeroSection({ content, proposalToken, signToken }: HeroSectionProps) {
+export function HeroSection({ content, proposalToken, signToken, sourcePdfDownloadUrl }: HeroSectionProps) {
   const heroRef = useRef<HTMLElement>(null)
   const [mousePos, setMousePos] = useState({ x: 50, y: 40 })
   const [isHovered, setIsHovered] = useState(false)
@@ -103,14 +104,14 @@ export function HeroSection({ content, proposalToken, signToken }: HeroSectionPr
         </h1>
 
         {/* Description */}
-        <p className="mx-auto mb-10 mt-8 max-w-2xl text-base font-light leading-relaxed text-foreground/45 md:text-lg">
+        <p className="mx-auto mb-10 mt-8 max-w-2xl text-base font-light leading-relaxed text-foreground/70 md:text-lg">
           {content.description}
         </p>
 
         {/* Badges */}
         <div className="mb-12 flex flex-wrap items-center justify-center gap-2">
           {content.badges.map((badge) => (
-            <span key={badge} className="rounded-full border border-foreground/[0.08] bg-foreground/[0.03] px-3.5 py-1.5 text-xs font-medium text-foreground/50 backdrop-blur-sm">
+            <span key={badge} className="rounded-full border border-foreground/[0.08] bg-foreground/[0.03] px-3.5 py-1.5 text-xs font-medium text-foreground/75 backdrop-blur-sm">
               {badge}
             </span>
           ))}
@@ -129,22 +130,38 @@ export function HeroSection({ content, proposalToken, signToken }: HeroSectionPr
               </span>
             </Link>
           ) : (
-            <button className="group inline-flex cursor-not-allowed items-center justify-center gap-3 rounded-[40px] py-3.5 pl-7 pr-4 font-medium text-foreground/50 btn-primary opacity-40">
+            <button className="group inline-flex cursor-not-allowed items-center justify-center gap-3 rounded-[40px] py-3.5 pl-7 pr-4 font-medium text-foreground/75 btn-primary opacity-40">
               <span>Review &amp; Sign</span>
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20">
                 <ArrowRight size={15} />
               </span>
             </button>
           )}
-          <button
-            onClick={() => window.print()}
-            className="group inline-flex items-center justify-center gap-3 rounded-[40px] border border-foreground/[0.12] bg-foreground/[0.02] py-3.5 pl-7 pr-4 font-medium text-foreground/50 backdrop-blur-sm transition-all duration-300 hover:border-foreground/20 hover:bg-foreground/[0.05] hover:text-foreground/80"
-          >
-            <span>Download PDF</span>
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground/10 transition-all duration-300 group-hover:scale-110">
-              <Download size={14} />
-            </span>
-          </button>
+          {sourcePdfDownloadUrl ? (
+            <a
+              href={sourcePdfDownloadUrl}
+              download="avant-pathfinder-atom-proposal.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center justify-center gap-3 rounded-[40px] border border-foreground/[0.12] bg-foreground/[0.02] py-3.5 pl-7 pr-4 font-medium text-foreground/60 backdrop-blur-sm transition-all duration-300 hover:border-foreground/20 hover:bg-foreground/[0.05] hover:text-foreground/90"
+            >
+              <span>Download PDF</span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground/10 transition-all duration-300 group-hover:scale-110">
+                <Download size={14} />
+              </span>
+            </a>
+          ) : (
+            <button
+              onClick={() => window.print()}
+              className="group inline-flex items-center justify-center gap-3 rounded-[40px] border border-foreground/[0.12] bg-foreground/[0.02] py-3.5 pl-7 pr-4 font-medium text-foreground/75 backdrop-blur-sm transition-all duration-300 hover:border-foreground/20 hover:bg-foreground/[0.05] hover:text-foreground/80"
+              title="No PDF uploaded — printing page"
+            >
+              <span>Download PDF</span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground/10 transition-all duration-300 group-hover:scale-110">
+                <Download size={14} />
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Stats */}

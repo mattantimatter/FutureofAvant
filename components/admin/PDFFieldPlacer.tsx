@@ -256,19 +256,36 @@ export function PDFFieldPlacer({ pdfUrl, signatureRequestId, existingFields = []
     const rect = e.currentTarget.getBoundingClientRect()
     const cx = e.clientX - rect.left
     const cy = e.clientY - rect.top
-    const pdfCoords = canvasToPdf(cx, cy, pi)
     const cfg = FIELD_CONFIG[activeType]
+    const SCALE = 1.4
+    const page = pages[pi]
+    if (!page) return
+
+    // Canvas size of the field
+    const cW = cfg.defaultW
+    const cH = cfg.defaultH
+    // Top-left canvas position (field centered on click)
+    const cLeft = cx - cW / 2
+    const cTop  = cy - cH / 2
+
+    // Convert top-left + size to PDF coordinates (bottom-left origin, points)
+    const pdfX = Math.round(cLeft / SCALE)
+    const pdfY = Math.round(page.pdfHeight - (cTop + cH) / SCALE) // bottom-left in PDF
+    const pdfW = Math.round(cW / SCALE)
+    const pdfH = Math.round(cH / SCALE)
+
     const newField: FieldPosition = {
       id: Math.random().toString(36).slice(2),
       type: activeType,
       page: pi + 1,
-      ...pdfCoords,
-      width: cfg.defaultW,
-      height: cfg.defaultH,
-      canvasX: cx - cfg.defaultW / 2,
-      canvasY: cy - cfg.defaultH / 2,
-      canvasW: cfg.defaultW,
-      canvasH: cfg.defaultH,
+      x: pdfX,
+      y: pdfY,
+      width: pdfW,
+      height: pdfH,
+      canvasX: cLeft,
+      canvasY: cTop,
+      canvasW: cW,
+      canvasH: cH,
     }
 
     if (activeType === 'admin_signature') {
@@ -284,17 +301,21 @@ export function PDFFieldPlacer({ pdfUrl, signatureRequestId, existingFields = []
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>, pi: number) => {
     if (!isDragging) return
+    const page = pages[pi]
+    const SCALE = 1.4
     setFields((prev) => prev.map((f) => {
       if (f.id !== isDragging || f.page !== pi + 1) return f
       const dx = e.clientX - dragOffset.x
       const dy = e.clientY - dragOffset.y
       const nx = (f.canvasX ?? 0) + dx
       const ny = (f.canvasY ?? 0) + dy
-      const pdf = canvasToPdf(nx + (f.canvasW ?? 0) / 2, ny + (f.canvasH ?? 0) / 2, pi)
-      return { ...f, canvasX: nx, canvasY: ny, x: pdf.x, y: pdf.y }
+      // Recalculate PDF bottom-left from new canvas top-left
+      const pdfX = Math.round(nx / SCALE)
+      const pdfY = page ? Math.round(page.pdfHeight - (ny + (f.canvasH ?? f.height * SCALE)) / SCALE) : f.y
+      return { ...f, canvasX: nx, canvasY: ny, x: pdfX, y: pdfY }
     }))
     setDragOffset({ x: e.clientX, y: e.clientY })
-  }, [isDragging, dragOffset, canvasToPdf])
+  }, [isDragging, dragOffset, pages])
 
   const handleFieldMouseDown = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
@@ -436,23 +457,24 @@ export function PDFFieldPlacer({ pdfUrl, signatureRequestId, existingFields = []
           onConfirm={(value, dataURL, addDate) => {
             const sigField = { ...pendingAdminField, value, dataURL }
             const additions: FieldPosition[] = [sigField]
-            // Auto-add a date field directly below the admin signature
+            // Auto-add a date field directly below the admin signature (in PDF points)
             if (addDate) {
-              const dateW = 130
-              const dateH = 32
-              const dateCfg = FIELD_CONFIG['date']
+              const datePdfW = Math.round(130 / 1.4)  // ~93 pts
+              const datePdfH = Math.round(32 / 1.4)   // ~23 pts
+              const dateCanvasW = 130
+              const dateCanvasH = 32
               additions.push({
                 id: Math.random().toString(36).slice(2),
                 type: 'date',
                 page: pendingAdminField.page,
                 x: pendingAdminField.x,
-                y: pendingAdminField.y - dateH - 4, // below in PDF coords (bottom-origin)
-                width: dateW,
-                height: dateH,
+                y: pendingAdminField.y - datePdfH - 4, // below in PDF bottom-origin coords
+                width: datePdfW,
+                height: datePdfH,
                 canvasX: (pendingAdminField.canvasX ?? 0),
-                canvasY: (pendingAdminField.canvasY ?? 0) + (pendingAdminField.canvasH ?? 60) + 4,
-                canvasW: dateW,
-                canvasH: dateH,
+                canvasY: (pendingAdminField.canvasY ?? 0) + (pendingAdminField.canvasH ?? 43) + 4,
+                canvasW: dateCanvasW,
+                canvasH: dateCanvasH,
               })
             }
             setFields(p => [...p, ...additions])

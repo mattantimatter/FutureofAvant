@@ -82,13 +82,13 @@ export function RolloutPlan({ content }: RolloutPlanProps) {
       <div className="mx-auto max-w-3xl px-6">
         {/* Header */}
         <div className="mb-16 text-center">
-          <p className="mb-3 font-mono text-xs uppercase tracking-[0.2em] text-foreground/35">
+          <p className="mb-3 font-mono text-xs uppercase tracking-[0.2em] text-foreground/55">
             Rollout Plan
           </p>
           <h2 className="mb-4 text-4xl font-bold tracking-tight text-foreground md:text-5xl">
             {content.title}
           </h2>
-          <p className="mx-auto max-w-md text-base font-light text-foreground/40">{content.subtitle}</p>
+          <p className="mx-auto max-w-md text-base font-light text-foreground/70">{content.subtitle}</p>
         </div>
 
         {/* Timeline */}
@@ -147,15 +147,15 @@ export function RolloutPlan({ content }: RolloutPlanProps) {
                         <span className="font-semibold text-foreground">{phase.title}</span>
                       </div>
                       <div className="flex items-center gap-1.5 rounded-lg border border-foreground/[0.08] bg-foreground/[0.03] px-2.5 py-1">
-                        <Clock size={10} className="text-foreground/30" />
-                        <span className="text-xs text-foreground/40">{phase.duration}</span>
+                        <Clock size={10} className="text-foreground/75" />
+                        <span className="text-xs text-foreground/70">{phase.duration}</span>
                       </div>
                     </div>
 
                     {/* Deliverables */}
                     <ul className="mb-4 space-y-2">
                       {phase.deliverables.map((d) => (
-                        <li key={d} className="flex items-start gap-2.5 text-sm font-light text-foreground/50">
+                        <li key={d} className="flex items-start gap-2.5 text-sm font-light text-foreground/75">
                           <Check size={13} className={cn('mt-0.5 shrink-0', c.label)} />
                           {d}
                         </li>

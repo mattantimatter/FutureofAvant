@@ -24,12 +24,13 @@ interface ProposalLayoutProps {
   proposal: Proposal
   proposalJson: ProposalJSON
   signToken?: string
+  sourcePdfDownloadUrl?: string | null
 }
 
-function renderSection(section: ProposalSection, proposalToken: string, signToken?: string) {
+function renderSection(section: ProposalSection, proposalToken: string, signToken?: string, pdfUrl?: string | null) {
   switch (section.id) {
     case 'hero':
-      return <HeroSection content={section.content as Parameters<typeof HeroSection>[0]['content']} proposalToken={proposalToken} signToken={signToken} />
+      return <HeroSection content={section.content as Parameters<typeof HeroSection>[0]['content']} proposalToken={proposalToken} signToken={signToken} sourcePdfDownloadUrl={pdfUrl} />
     case 'executive-summary':
       return <ExecutiveSummary content={section.content as Parameters<typeof ExecutiveSummary>[0]['content']} />
     case 'atom-framework':
@@ -60,7 +61,7 @@ const statusLabel: Record<string, string> = {
   draft: 'Draft',
 }
 
-export function ProposalLayout({ proposal, proposalJson, signToken }: ProposalLayoutProps) {
+export function ProposalLayout({ proposal, proposalJson, signToken, sourcePdfDownloadUrl }: ProposalLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const handleShare = async () => {
@@ -136,7 +137,7 @@ export function ProposalLayout({ proposal, proposalJson, signToken }: ProposalLa
           {proposalJson.sections.map((section, i) => (
             <React.Fragment key={section.id}>
               {i > 0 && <div className="section-divider" />}
-              {renderSection(section, proposal.public_token, signToken)}
+              {renderSection(section, proposal.public_token, signToken, sourcePdfDownloadUrl)}
             </React.Fragment>
           ))}
           <div className="section-divider" />

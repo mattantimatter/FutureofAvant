@@ -97,10 +97,10 @@ export function StepReview({ proposal, proposalJson, signer, onNext }: StepRevie
           <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-secondary">
             Full Proposal Document
           </h3>
-          <div className="rounded-xl border border-[rgba(105,106,172,0.1)] overflow-hidden" style={{ height: 300 }}>
+          <div className="rounded-xl border border-foreground/[0.08] overflow-hidden" style={{ height: 380 }}>
             <iframe
-              src={`/api/pdf-proxy?path=${encodeURIComponent(proposal.source_pdf_path)}`}
-              className="h-full w-full"
+              src={`/api/pdf-proxy?path=${encodeURIComponent(proposal.source_pdf_path)}&bucket=proposal_source_pdfs`}
+              className="h-full w-full bg-white"
               title="Proposal PDF"
             />
           </div>

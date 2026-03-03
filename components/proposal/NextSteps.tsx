@@ -85,8 +85,8 @@ export function NextSteps({ content, proposalToken, signToken }: NextStepsProps)
           <h2 className="mb-4 text-4xl font-bold tracking-tight text-foreground md:text-5xl">
             {content.title}
           </h2>
-          <p className="mx-auto max-w-xl text-base font-semibold text-foreground/50">{content.subtitle}</p>
-          <p className="mx-auto mt-3 max-w-2xl text-sm font-light text-foreground/35">{content.description}</p>
+          <p className="mx-auto max-w-xl text-base font-semibold text-foreground/75">{content.subtitle}</p>
+          <p className="mx-auto mt-3 max-w-2xl text-sm font-light text-foreground/55">{content.description}</p>
         </div>
 
         {/* Action cards */}
@@ -105,7 +105,7 @@ export function NextSteps({ content, proposalToken, signToken }: NextStepsProps)
                 <ProposalIcon name={action.icon} size={19} className="text-secondary" />
               </div>
               <h3 className="mb-2 font-semibold text-foreground">{action.title}</h3>
-              <p className="mb-5 text-sm font-light text-foreground/45">{action.description}</p>
+              <p className="mb-5 text-sm font-light text-foreground/70">{action.description}</p>
 
               {/* Route each button correctly */}
               {action.href === '#sign' ? (
@@ -162,10 +162,10 @@ export function NextSteps({ content, proposalToken, signToken }: NextStepsProps)
         {/* Urgency items */}
         {content.urgencyItems && content.urgencyItems.length > 0 && (
           <div className="mb-10 rounded-2xl border border-accent/12 bg-accent/[0.04] p-6">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground/35">Why Act Now</p>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground/55">Why Act Now</p>
             <ul className="space-y-2">
               {content.urgencyItems.map((item: string, i: number) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm font-light text-foreground/50">
+                <li key={i} className="flex items-start gap-2.5 text-sm font-light text-foreground/75">
                   <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-secondary" />
                   {item}
                 </li>
@@ -175,14 +175,14 @@ export function NextSteps({ content, proposalToken, signToken }: NextStepsProps)
         )}
 
         {/* Valid until */}
-        <div className="mb-10 flex items-center justify-center gap-2 text-sm text-foreground/25">
+        <div className="mb-10 flex items-center justify-center gap-2 text-sm text-foreground/45">
           <Clock size={13} />
-          <span>Proposal valid until <strong className="text-foreground/40">{content.validUntil}</strong></span>
+          <span>Proposal valid until <strong className="text-foreground/70">{content.validUntil}</strong></span>
         </div>
 
         {/* Contacts */}
         <div className="rounded-2xl border border-foreground/[0.07] bg-foreground/[0.02] p-6">
-          <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-foreground/35">Your Contacts</h4>
+          <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-foreground/55">Your Contacts</h4>
           <div className="flex flex-wrap gap-4">
             {content.contacts.map((contact) => (
               <div key={contact.email} className="flex items-center gap-3 rounded-xl border border-foreground/[0.07] bg-foreground/[0.02] px-4 py-3">
@@ -191,7 +191,7 @@ export function NextSteps({ content, proposalToken, signToken }: NextStepsProps)
                 </div>
                 <div>
                   <div className="text-sm font-medium text-foreground">{contact.name}</div>
-                  <div className="text-xs text-foreground/35">{contact.role}</div>
+                  <div className="text-xs text-foreground/55">{contact.role}</div>
                   <a href={`mailto:${contact.email}`} className="flex items-center gap-1 text-xs text-accent hover:text-secondary transition-colors">
                     <Mail size={10} />{contact.email}
                   </a>

@@ -90,11 +90,21 @@ export default async function ProposalViewerPage({ params, searchParams }: PageP
 
   const proposalJson = proposal.proposal_json as unknown as ProposalJSON
 
+  // Generate a 1-hour signed download URL for the source PDF (for the Download button)
+  let sourcePdfDownloadUrl: string | null = null
+  const pdfPath = proposal.signed_pdf_path ?? proposal.source_pdf_path
+  if (pdfPath) {
+    const bucket = proposal.signed_pdf_path ? 'proposal_signed_pdfs' : 'proposal_source_pdfs'
+    const { data: urlData } = await supabase.storage.from(bucket).createSignedUrl(pdfPath, 3600)
+    sourcePdfDownloadUrl = urlData?.signedUrl ?? null
+  }
+
   return (
     <ProposalLayout
       proposal={proposal}
       proposalJson={proposalJson}
       signToken={signToken}
+      sourcePdfDownloadUrl={sourcePdfDownloadUrl}
     />
   )
 }
