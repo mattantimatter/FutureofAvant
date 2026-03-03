@@ -12,7 +12,7 @@ const statusColors: Record<string, 'accent' | 'amber' | 'green'> = {
   draft: 'accent', sent: 'amber', signed: 'green',
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? ''
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://futureofavant.com'
 
 export default function AdminDashboardPage() {
   const { toast } = useToast()
@@ -92,16 +92,16 @@ export default function AdminDashboardPage() {
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <code className="rounded-lg border border-foreground/[0.08] bg-foreground/[0.03] px-3 py-1.5 text-xs text-secondary">
-                      {demoUrl || 'https://avant-atom-proposal.vercel.app/demo'}
+                      {demoUrl}
                     </code>
                     <button
-                      onClick={() => copy(demoUrl || 'https://avant-atom-proposal.vercel.app/demo', 'Demo link')}
+                      onClick={() => copy(demoUrl, 'Demo link')}
                       className="flex items-center gap-1.5 rounded-lg border border-foreground/[0.08] bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/50 transition-all hover:border-accent/30 hover:text-foreground"
                     >
                       <Copy size={11} />Copy
                     </button>
                     <a
-                      href={demoUrl || 'https://avant-atom-proposal.vercel.app/demo'}
+                      href={demoUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1.5 rounded-lg border border-foreground/[0.08] bg-foreground/[0.03] px-3 py-1.5 text-xs text-foreground/50 transition-all hover:border-accent/30 hover:text-foreground"

@@ -10,7 +10,7 @@ const font = Plus_Jakarta_Sans({
   display: 'swap',
 })
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://avant-atom-proposal.vercel.app'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://futureofavant.com'
 
 export const metadata: Metadata = {
   title: 'Avant Pathfinder × Antimatter AI — ATOM Deployment Proposal',

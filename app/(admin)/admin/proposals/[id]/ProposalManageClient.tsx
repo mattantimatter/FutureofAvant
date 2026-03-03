@@ -50,7 +50,7 @@ const EVENT_ICONS: Record<string, string> = {
   DECLINE_SIGN: '❌',
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://avant-atom-proposal.vercel.app'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://futureofavant.com'
 
 export function ProposalManageClient({
   proposal,
