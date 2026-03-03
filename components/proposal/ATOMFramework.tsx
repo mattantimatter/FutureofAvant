@@ -5,7 +5,7 @@ import { DepthCard } from '@/components/reactbits/DepthCard'
 import { Badge } from '@/components/ui/Badge'
 import { ProposalIcon } from './ProposalIcon'
 import { cn } from '@/lib/utils'
-import { Check } from 'lucide-react'
+import { Check, ExternalLink } from 'lucide-react'
 import { GradientBlob } from '@/components/reactbits/GradientBlob'
 
 interface Pillar {
@@ -17,6 +17,8 @@ interface Pillar {
   color: string
   description: string
   capabilities: string[]
+  exampleUrl?: string
+  exampleLabel?: string
 }
 
 interface ATOMFrameworkProps {
@@ -97,14 +99,26 @@ export function ATOMFramework({ content }: ATOMFrameworkProps) {
                 glowColor={c.glow}
                 className="p-6 cursor-pointer"
               >
-                {/* Step number */}
-                <div className="mb-5 flex items-start justify-between">
+                {/* Step number + badge + example link */}
+                <div className="mb-5 flex items-start justify-between gap-2">
                   <span className="font-mono text-5xl font-black text-[rgba(105,106,172,0.12)]">
                     {pillar.step}
                   </span>
-                  <Badge variant={c.badge} size="sm">
-                    {pillar.title}
-                  </Badge>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <Badge variant={c.badge} size="sm">{pillar.title}</Badge>
+                    {pillar.exampleUrl && (
+                      <a
+                        href={pillar.exampleUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1 rounded-lg border border-accent/20 bg-accent/[0.06] px-2 py-1 text-[10px] font-medium text-secondary transition-all hover:border-accent/40 hover:bg-accent/10 hover:text-foreground"
+                      >
+                        <ExternalLink size={9} />
+                        {pillar.exampleLabel ?? 'View Example'}
+                      </a>
+                    )}
+                  </div>
                 </div>
 
                 {/* Icon + title */}

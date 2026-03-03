@@ -126,6 +126,8 @@ By signing, I confirm I have the authority to enter into this agreement on behal
             subtitle: 'Agentic Discovery Engine',
             icon: 'search',
             color: 'purple',
+            exampleUrl: 'https://www.antimatterai.com/atom-intentiq',
+            exampleLabel: 'See IntentIQ Demo',
             description:
               'Transform static intake forms into intelligent guided conversation flows. Real-time advisor coaching, adaptive question sequencing, and automated artifact generation—all within a single session.',
             capabilities: [
@@ -144,6 +146,8 @@ By signing, I confirm I have the authority to enter into this agreement on behal
             subtitle: 'Real-Time Provider Comparison',
             icon: 'chart',
             color: 'indigo',
+            exampleUrl: 'https://www.antimatterai.com/resources/vendor-matrix',
+            exampleLabel: 'See Vendor Matrix',
             description:
               'Transform Competitive Matrices from a 3-5 day manual deliverable into a live, interactive decision tool. Providers re-rank in real-time as discovery data changes. "Ask the Matrix" answers any provider question instantly.',
             capabilities: [
@@ -449,7 +453,7 @@ By signing, I confirm I have the authority to enter into this agreement on behal
             name: 'Competitive Matrices',
             price: '$650,000',
             period: 'included in $2M total',
-            badge: 'Pillar 2 — Core',
+            badge: 'Pillar 2',
             exampleUrl: 'https://www.antimatterai.com/resources/vendor-matrix',
             exampleLabel: 'See Vendor Matrix',
             description: 'Real-time provider comparison. Live ranking, fit scoring, controlled GenUI, "Ask the Matrix" interface, Atlas geographic filtering.',
