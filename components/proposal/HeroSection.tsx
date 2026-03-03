@@ -53,7 +53,7 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
     <section
       id="section-hero"
       ref={heroRef}
-      className="section-anchor relative flex flex-col overflow-hidden"
+      className="section-anchor relative overflow-hidden"
       style={{ minHeight: '100vh' }}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
@@ -71,8 +71,9 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
         style={{ backgroundImage: 'linear-gradient(rgba(246,246,253,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(246,246,253,0.6) 1px, transparent 1px)', backgroundSize: '80px 80px' }}
         aria-hidden="true" />
 
-      {/* ── TOP: Logo + Headline — perfectly centered between navbar and video ── */}
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 text-center">
+      {/* ── TOP: Logo + Headline — 40% down from viewport top ─────── */}
+      {/* pt = ~40vh minus half the content block height (~65px) = center lands at 40% */}
+      <div className="relative z-10 flex flex-col items-center px-6 text-center" style={{ paddingTop: 'calc(38vh - 65px)' }}>
 
         {/* Logo lockup */}
         <div className="mb-5 flex items-center justify-center gap-5">
@@ -94,7 +95,7 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
         </h1>
       </div>
 
-      {/* ── BOTTOM: Video block anchored to lower section ─────────── */}
+      {/* ── VIDEO: Sits below the headline, partially visible at fold ─ */}
       <div className="relative z-10 px-6 pb-20">
         <div className="mx-auto flex max-w-3xl flex-col items-center">
           <div
