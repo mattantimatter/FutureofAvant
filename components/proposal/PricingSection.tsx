@@ -25,6 +25,12 @@ interface PaymentScheduleItem {
   timing: string
 }
 
+interface ROIMetric {
+  label: string
+  value: string
+  note?: string
+}
+
 interface PricingSectionProps {
   content: {
     title: string
@@ -32,6 +38,10 @@ interface PricingSectionProps {
     note: string
     tiers: PricingTier[]
     paymentSchedule: PaymentScheduleItem[]
+    roi?: {
+      headline: string
+      metrics: ROIMetric[]
+    }
   }
   proposalToken: string
   signToken?: string
@@ -138,6 +148,24 @@ export function PricingSection({ content, proposalToken, signToken }: PricingSec
             </div>
           ))}
         </div>
+
+        {/* ROI block */}
+        {content.roi && (
+          <div className="mb-6 overflow-hidden rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/[0.06] to-transparent">
+            <div className="border-b border-accent/[0.10] px-6 py-4">
+              <h3 className="font-bold text-foreground">{content.roi.headline}</h3>
+            </div>
+            <div className="grid gap-px bg-foreground/[0.04] sm:grid-cols-2 lg:grid-cols-5">
+              {content.roi.metrics.map((m: { label: string; value: string; note?: string }) => (
+                <div key={m.label} className="bg-background p-4">
+                  <div className="text-xl font-bold text-secondary">{m.value}</div>
+                  <div className="mt-0.5 text-xs font-medium text-foreground/60">{m.label}</div>
+                  {m.note && <div className="mt-1 text-xs font-light text-foreground/30">{m.note}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Payment schedule */}
         <div className="rounded-2xl border border-[rgba(105,106,172,0.12)] bg-[rgba(10,10,15,0.4)] p-6">

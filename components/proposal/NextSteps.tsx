@@ -30,6 +30,7 @@ interface NextStepsProps {
     actions: Action[]
     contacts: Contact[]
     validUntil: string
+    urgencyItems?: string[]
   }
   proposalToken: string
   signToken?: string
@@ -105,8 +106,23 @@ export function NextSteps({ content, proposalToken, signToken }: NextStepsProps)
           ))}
         </div>
 
+        {/* Urgency items */}
+        {content.urgencyItems && content.urgencyItems.length > 0 && (
+          <div className="mb-10 rounded-2xl border border-accent/15 bg-accent/[0.04] p-6">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground/40">Why Act Now</p>
+            <ul className="space-y-2">
+              {content.urgencyItems.map((item: string, i: number) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm font-light text-foreground/55">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-secondary" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Valid until notice */}
-        <div className="mb-10 flex items-center justify-center gap-2 text-sm text-slate-500">
+        <div className="mb-10 flex items-center justify-center gap-2 text-sm text-foreground/35">
           <Clock size={14} />
           <span>This proposal is valid until <strong className="text-slate-400">{content.validUntil}</strong></span>
         </div>

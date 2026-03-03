@@ -1,17 +1,19 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Copy, ExternalLink, Plus, Upload, Download, Eye,
-  CheckCircle, Clock, Send, AlertCircle, RefreshCw, Trash2,
+  ArrowLeft, Copy, ExternalLink, Plus, Upload, Download,
+  Eye, CheckCircle, Clock, Send, RefreshCw, Mail, ChevronDown,
+  ChevronUp, PenLine, Layers,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import { PDFFieldPlacer } from '@/components/admin/PDFFieldPlacer'
 import type { Proposal, Signer, AuditEvent } from '@/lib/supabase/types'
+import type { FieldPosition } from '@/components/admin/PDFFieldPlacer'
 
 interface SignerWithRequest extends Signer {
   signature_requests: Array<{
@@ -19,6 +21,7 @@ interface SignerWithRequest extends Signer {
     sign_token: string
     status: string
     signed_at: string | null
+    field_positions?: FieldPosition[]
   }>
 }
 
@@ -27,6 +30,14 @@ interface ProposalManageClientProps {
   signers: SignerWithRequest[]
   auditEvents: AuditEvent[]
   signedPdfUrl: string | null
+  sourcePdfSignedUrl?: string | null
+}
+
+const STATUS_CONFIG: Record<string, { color: 'green' | 'accent' | 'secondary' | 'red' | 'muted'; icon: React.ComponentType<{ size?: number; className?: string }>; label: string }> = {
+  signed: { color: 'green', icon: CheckCircle, label: 'Signed' },
+  viewed: { color: 'secondary', icon: Eye, label: 'Viewed' },
+  pending: { color: 'muted', icon: Clock, label: 'Pending' },
+  declined: { color: 'red', icon: RefreshCw, label: 'Declined' },
 }
 
 const EVENT_ICONS: Record<string, string> = {
@@ -39,13 +50,14 @@ const EVENT_ICONS: Record<string, string> = {
   DECLINE_SIGN: '❌',
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://avant-atom-proposal.vercel.app'
 
 export function ProposalManageClient({
   proposal,
   signers,
   auditEvents,
   signedPdfUrl,
+  sourcePdfSignedUrl,
 }: ProposalManageClientProps) {
   const { toast } = useToast()
   const router = useRouter()
@@ -54,54 +66,52 @@ export function ProposalManageClient({
   const [shareData, setShareData] = useState<{ label: string; url: string }[]>([])
   const [uploadingPdf, setUploadingPdf] = useState(false)
   const [addingSignerLoading, setAddingSignerLoading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [fieldPlacerSigner, setFieldPlacerSigner] = useState<SignerWithRequest | null>(null)
+  const [auditExpanded, setAuditExpanded] = useState(false)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const viewerUrl = `${SITE_URL}/p/${proposal.public_token}`
 
-  const copyToClipboard = async (text: string, label: string) => {
+  const copy = async (text: string, label: string) => {
     await navigator.clipboard.writeText(text)
-    toast(`${label} copied to clipboard!`)
+    toast(`${label} copied!`)
   }
 
   const openShareModal = (signerSignToken?: string) => {
-    const links = [
-      { label: 'Viewer Link (Public)', url: viewerUrl },
-    ]
+    const links = [{ label: 'Viewer Link (Public)', url: viewerUrl }]
     if (signerSignToken) {
-      links.push({
-        label: 'Sign Link (Signer)',
-        url: `${viewerUrl}?st=${signerSignToken}`,
-      })
-      links.push({
-        label: 'Direct Sign Link',
-        url: `${SITE_URL}/p/${proposal.public_token}/sign?st=${signerSignToken}`,
-      })
+      links.push({ label: 'Sign Link (with proposal view)', url: `${viewerUrl}?st=${signerSignToken}` })
+      links.push({ label: 'Direct Sign Link', url: `${SITE_URL}/p/${proposal.public_token}/sign?st=${signerSignToken}` })
     }
     setShareData(links)
     setShareModalOpen(true)
+  }
+
+  const sendViaEmail = (signer: SignerWithRequest) => {
+    const req = signer.signature_requests?.[0]
+    if (!req) return
+    const signUrl = `${SITE_URL}/p/${proposal.public_token}/sign?st=${req.sign_token}`
+    const subject = encodeURIComponent(`Please sign: ${proposal.title}`)
+    const body = encodeURIComponent(
+      `Hi ${signer.name},\n\nPlease review and sign the following proposal:\n\n${proposal.title}\n\nSign here: ${signUrl}\n\nBest,\nAntimatter AI`
+    )
+    window.open(`mailto:${signer.email}?subject=${subject}&body=${body}`)
   }
 
   const handleUploadPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadingPdf(true)
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('proposalId', proposal.id)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('proposalId', proposal.id)
       const res = await fetch('/api/admin/upload-pdf', { method: 'POST', body: formData })
       const data = await res.json()
-      if (data.success) {
-        toast('PDF uploaded successfully!')
-        router.refresh()
-      } else {
-        toast(data.error ?? 'Upload failed', 'error')
-      }
-    } catch {
-      toast('Upload failed', 'error')
-    } finally {
-      setUploadingPdf(false)
-    }
+      if (data.success) { toast('PDF uploaded!'); router.refresh() }
+      else toast(data.error ?? 'Upload failed', 'error')
+    } catch { toast('Upload failed', 'error') }
+    finally { setUploadingPdf(false) }
   }
 
   const handleAddSigner = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -112,216 +122,241 @@ export function ProposalManageClient({
     try {
       const res = await fetch('/api/admin/signers', { method: 'POST', body: formData })
       const data = await res.json()
-      if (data.success) {
-        toast('Signer added! Sign link generated.')
-        setAddSignerOpen(false)
-        router.refresh()
-      } else {
-        toast(data.error ?? 'Failed to add signer', 'error')
-      }
-    } catch {
-      toast('Failed to add signer', 'error')
-    } finally {
-      setAddingSignerLoading(false)
-    }
+      if (data.success) { toast('Signer added! Sign link generated.'); setAddSignerOpen(false); router.refresh() }
+      else toast(data.error ?? 'Failed', 'error')
+    } catch { toast('Failed to add signer', 'error') }
+    finally { setAddingSignerLoading(false) }
   }
 
   const handleMarkSent = async () => {
     await fetch(`/api/admin/proposals/${proposal.id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'sent' }),
     })
-    toast('Proposal marked as sent!')
+    toast('Marked as sent!')
     router.refresh()
   }
 
+  const handleSaveFields = async (signerId: string, reqId: string, fields: FieldPosition[]) => {
+    const res = await fetch(`/api/admin/signers/${signerId}/fields`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ signatureRequestId: reqId, fields }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      toast(`${data.fieldCount} signature field${data.fieldCount !== 1 ? 's' : ''} saved!`)
+      setFieldPlacerSigner(null)
+      router.refresh()
+    } else {
+      toast(data.error ?? 'Failed to save fields', 'error')
+    }
+  }
+
+  // Get viewed timestamp from audit events
+  const getViewedAt = (signerId: string) => {
+    const event = auditEvents.find(
+      (e) => e.event_type === 'VIEW_PROPOSAL' && e.signer_id === signerId
+    )
+    return event?.created_at ?? null
+  }
+
   return (
-    <div className="p-6 md:p-8">
+    <div className="p-6 md:p-8 max-w-5xl">
       {/* Header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-7 flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <Link href="/admin" className="mt-1 text-slate-500 hover:text-slate-300 transition-colors">
-            <ArrowLeft size={18} />
+          <Link href="/admin" className="mt-1 text-foreground/30 hover:text-foreground/70 transition-colors">
+            <ArrowLeft size={17} />
           </Link>
           <div>
-            <div className="mb-1 flex items-center gap-2">
-              <h1 className="text-2xl font-semibold text-foreground">{proposal.title}</h1>
-              <Badge
-                variant={proposal.status === 'signed' ? 'green' : proposal.status === 'sent' ? 'amber' : 'accent'}
-              >
+            <div className="mb-1 flex items-center gap-2.5">
+              <h1 className="text-xl font-semibold text-foreground">{proposal.title}</h1>
+              <Badge variant={proposal.status === 'signed' ? 'green' : proposal.status === 'sent' ? 'amber' : 'accent'}>
                 {proposal.status}
               </Badge>
             </div>
-            <p className="text-sm text-slate-400">{proposal.client_name}</p>
+            <p className="text-sm font-light text-foreground/40">{proposal.client_name}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href={viewerUrl}
-            target="_blank"
-            className="flex items-center gap-1.5 rounded-lg border border-[rgba(105,106,172,0.15)] px-3 py-2 text-sm text-slate-300 transition-all hover:border-accent/30 hover:text-white"
-          >
-            <Eye size={14} />
-            Preview
+          <Link href={viewerUrl} target="_blank"
+            className="flex items-center gap-1.5 rounded-lg border border-foreground/[0.08] px-3 py-2 text-xs text-foreground/40 transition-all hover:border-foreground/20 hover:text-foreground">
+            <Eye size={13} />Preview
           </Link>
-          {proposal.status === 'draft' && (
-            <button
-              onClick={handleMarkSent}
-              className="flex items-center gap-1.5 rounded-lg bg-amber-600/20 px-3 py-2 text-sm text-amber-300 transition-all hover:bg-amber-600/30"
-            >
-              <Send size={14} />
-              Mark Sent
+          {proposal.status !== 'sent' && (
+            <button onClick={handleMarkSent}
+              className="flex items-center gap-1.5 rounded-lg bg-yellow-500/10 px-3 py-2 text-xs text-yellow-400 transition-all hover:bg-yellow-500/20">
+              <Send size={13} />Mark Sent
             </button>
           )}
         </div>
       </div>
 
-      {/* Quick links */}
-      <div className="mb-6 rounded-xl border border-[rgba(105,106,172,0.1)] bg-[rgba(10,10,15,0.5)] p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground">Viewer Link</h2>
-          <button
-            onClick={() => copyToClipboard(viewerUrl, 'Viewer link')}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white"
-          >
-            <Copy size={12} />
-            Copy
+      {/* Viewer Link */}
+      <div className="mb-5 rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wider text-foreground/35">Viewer Link</span>
+          <button onClick={() => copy(viewerUrl, 'Viewer link')}
+            className="flex items-center gap-1 text-xs text-foreground/30 hover:text-foreground transition-colors">
+            <Copy size={11} />Copy
           </button>
         </div>
         <div className="flex items-center gap-2">
-          <code className="flex-1 truncate rounded-lg border border-[rgba(105,106,172,0.1)] bg-[rgba(2,2,2,0.5)] px-3 py-2 text-xs text-tertiary">
+          <code className="flex-1 truncate rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] px-3 py-2 text-xs text-secondary">
             {viewerUrl}
           </code>
-          <a
-            href={viewerUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-lg border border-[rgba(105,106,172,0.15)] p-2 text-slate-400 hover:text-white"
-          >
-            <ExternalLink size={14} />
+          <a href={viewerUrl} target="_blank" rel="noopener noreferrer"
+            className="rounded-lg border border-foreground/[0.08] p-2 text-foreground/30 hover:text-foreground transition-colors">
+            <ExternalLink size={13} />
           </a>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left column */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        {/* LEFT COLUMN */}
         <div className="space-y-5">
-          {/* PDF management */}
-          <div className="rounded-xl border border-[rgba(105,106,172,0.1)] bg-[rgba(10,10,15,0.5)] p-5">
-            <h2 className="mb-4 font-semibold text-foreground">Source PDF</h2>
+          {/* Source PDF */}
+          <div className="rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] p-5">
+            <h2 className="mb-3 font-semibold text-foreground">Source PDF</h2>
             {proposal.source_pdf_path ? (
-              <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
-                <CheckCircle size={16} className="text-emerald-400 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-emerald-300">PDF uploaded</p>
-                  <code className="text-xs text-slate-500 truncate block">{proposal.source_pdf_path}</code>
+              <div className="mb-3 flex items-center gap-2.5 rounded-lg border border-green-500/20 bg-green-500/5 p-3">
+                <CheckCircle size={15} className="text-green-400 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-green-400">PDF uploaded</p>
+                  <code className="block truncate text-xs text-foreground/30">{proposal.source_pdf_path}</code>
                 </div>
               </div>
             ) : (
-              <p className="mb-3 text-sm text-slate-400">No source PDF uploaded. The signed PDF will be a generated signature page.</p>
+              <p className="mb-3 text-sm font-light text-foreground/40">No source PDF. A signature page will be generated automatically.</p>
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/pdf"
-              className="hidden"
-              onChange={handleUploadPdf}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingPdf}
-              className="mt-3 flex items-center gap-2 rounded-lg border border-[rgba(105,106,172,0.2)] px-4 py-2 text-sm text-slate-300 transition-all hover:border-accent/30 hover:text-white disabled:opacity-50"
-            >
-              {uploadingPdf ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />}
+            <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden" onChange={handleUploadPdf} />
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploadingPdf}
+              className="flex items-center gap-2 rounded-lg border border-foreground/[0.08] px-4 py-2 text-xs text-foreground/50 transition-all hover:border-foreground/20 hover:text-foreground disabled:opacity-40">
+              {uploadingPdf ? <RefreshCw size={13} className="animate-spin" /> : <Upload size={13} />}
               {uploadingPdf ? 'Uploading...' : proposal.source_pdf_path ? 'Replace PDF' : 'Upload PDF'}
             </button>
           </div>
 
-          {/* Signed PDF */}
+          {/* Signed PDF download */}
           {signedPdfUrl && (
-            <div className="rounded-xl border border-accent/20 bg-secondary/5 p-5">
-              <h2 className="mb-3 font-semibold text-foreground">Signed PDF</h2>
-              <a
-                href={signedPdfUrl}
-                download="signed-proposal.pdf"
-                className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-foreground transition-all hover:bg-secondary w-fit"
-              >
-                <Download size={14} />
-                Download Signed PDF
+            <div className="rounded-xl border border-accent/20 bg-accent/[0.04] p-5">
+              <h2 className="mb-3 font-semibold text-foreground">Signed PDF Ready</h2>
+              <a href={signedPdfUrl} download="signed-proposal.pdf"
+                className="flex items-center gap-2 rounded-[40px] px-4 py-2 text-sm font-medium text-foreground btn-primary w-fit">
+                <Download size={14} />Download Signed PDF
               </a>
             </div>
           )}
 
           {/* Signers */}
-          <div className="rounded-xl border border-[rgba(105,106,172,0.1)] bg-[rgba(10,10,15,0.5)] p-5">
+          <div className="rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-semibold text-foreground">Signers</h2>
-              <button
-                onClick={() => setAddSignerOpen(true)}
-                className="flex items-center gap-1.5 rounded-lg bg-accent/15 px-3 py-1.5 text-xs font-semibold text-tertiary transition-all hover:bg-accent/20"
-              >
-                <Plus size={12} />
-                Add Signer
+              <button onClick={() => setAddSignerOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg bg-accent/10 px-3 py-1.5 text-xs font-medium text-secondary transition-all hover:bg-accent/20">
+                <Plus size={12} />Add Signer
               </button>
             </div>
 
             {signers.length === 0 ? (
-              <p className="text-sm text-slate-500">No signers added yet. Add at least one signer to enable signing.</p>
+              <p className="text-sm font-light text-foreground/35">No signers yet. Add a signer to generate a sign link.</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {signers.map((signer) => {
                   const req = signer.signature_requests?.[0]
+                  const statusInfo = STATUS_CONFIG[req?.status ?? 'pending']
+                  const StatusIcon = statusInfo.icon
+                  const viewedAt = getViewedAt(signer.id)
+                  const hasFields = (req?.field_positions?.length ?? 0) > 0
+
                   return (
-                    <div
-                      key={signer.id}
-                      className="rounded-xl border border-[rgba(105,106,172,0.08)] bg-[rgba(2,2,2,0.4)] p-4"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-foreground">{signer.name}</p>
-                          <p className="text-xs text-slate-400">{signer.email}</p>
-                          {signer.role && <p className="text-xs text-slate-500">{signer.role}</p>}
+                    <div key={signer.id} className="rounded-xl border border-foreground/[0.07] bg-foreground/[0.02] overflow-hidden">
+                      {/* Signer header */}
+                      <div className="flex items-start justify-between gap-3 p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/10 text-sm font-bold text-secondary">
+                            {signer.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground">{signer.name}</p>
+                            <p className="text-xs text-foreground/40">{signer.email}</p>
+                            {signer.role && <p className="text-xs text-foreground/30">{signer.role}</p>}
+                          </div>
                         </div>
                         {req && (
-                          <Badge
-                            variant={
-                              req.status === 'signed' ? 'green' :
-                              req.status === 'viewed' ? 'secondary' :
-                              req.status === 'declined' ? 'red' : 'muted'
-                            }
-                            size="sm"
-                          >
-                            {req.status}
+                          <Badge variant={statusInfo.color} size="sm">
+                            <StatusIcon size={10} className="mr-1" />
+                            {statusInfo.label}
                           </Badge>
                         )}
                       </div>
+
+                      {/* Status timeline */}
                       {req && (
-                        <div className="mt-3 flex items-center gap-2">
+                        <div className="border-t border-foreground/[0.05] px-4 pb-3 pt-3">
+                          <div className="flex gap-4 text-xs">
+                            {/* Created */}
+                            <div className="flex flex-col items-center gap-1">
+                              <div className="h-2 w-2 rounded-full bg-foreground/20" />
+                              <span className="text-foreground/25">Created</span>
+                              <span className="text-foreground/30">{new Date(req.sign_token ? signer.created_at : '').toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex flex-1 items-center">
+                              <div className="h-px flex-1 bg-foreground/[0.06]" />
+                            </div>
+                            {/* Viewed */}
+                            <div className="flex flex-col items-center gap-1">
+                              <div className={`h-2 w-2 rounded-full ${viewedAt ? 'bg-secondary' : 'bg-foreground/[0.08]'}`} />
+                              <span className={viewedAt ? 'text-secondary' : 'text-foreground/25'}>Viewed</span>
+                              <span className="text-foreground/30">
+                                {viewedAt ? new Date(viewedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                              </span>
+                            </div>
+                            <div className="flex flex-1 items-center">
+                              <div className="h-px flex-1 bg-foreground/[0.06]" />
+                            </div>
+                            {/* Signed */}
+                            <div className="flex flex-col items-center gap-1">
+                              <div className={`h-2 w-2 rounded-full ${req.signed_at ? 'bg-green-400' : 'bg-foreground/[0.08]'}`} />
+                              <span className={req.signed_at ? 'text-green-400' : 'text-foreground/25'}>Signed</span>
+                              <span className="text-foreground/30">
+                                {req.signed_at ? new Date(req.signed_at).toLocaleDateString() : '—'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Actions row */}
+                      {req && (
+                        <div className="flex flex-wrap items-center gap-2 border-t border-foreground/[0.05] px-4 py-3">
+                          <button
+                            onClick={() => copy(`${SITE_URL}/p/${proposal.public_token}/sign?st=${req.sign_token}`, 'Sign link')}
+                            className="flex items-center gap-1 text-xs text-foreground/35 hover:text-foreground transition-colors">
+                            <Copy size={11} />Copy sign link
+                          </button>
+                          <span className="text-foreground/15">·</span>
                           <button
                             onClick={() => openShareModal(req.sign_token)}
-                            className="flex items-center gap-1 text-xs text-secondary hover:text-tertiary transition-colors"
-                          >
-                            <ExternalLink size={11} />
-                            Get sign link
+                            className="flex items-center gap-1 text-xs text-foreground/35 hover:text-foreground transition-colors">
+                            <ExternalLink size={11} />All links
                           </button>
-                          <span className="text-slate-700">·</span>
+                          <span className="text-foreground/15">·</span>
                           <button
-                            onClick={() => copyToClipboard(
-                              `${SITE_URL}/p/${proposal.public_token}/sign?st=${req.sign_token}`,
-                              'Sign link'
-                            )}
-                            className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
-                          >
-                            <Copy size={11} />
-                            Copy
+                            onClick={() => sendViaEmail(signer)}
+                            className="flex items-center gap-1 text-xs text-secondary hover:text-foreground transition-colors">
+                            <Mail size={11} />Send email
                           </button>
-                          {req.signed_at && (
+                          {proposal.source_pdf_path && (
                             <>
-                              <span className="text-slate-700">·</span>
-                              <span className="text-xs text-emerald-400">
-                                Signed {new Date(req.signed_at).toLocaleDateString()}
-                              </span>
+                              <span className="text-foreground/15">·</span>
+                              <button
+                                onClick={() => setFieldPlacerSigner(signer)}
+                                className={`flex items-center gap-1 text-xs transition-colors ${hasFields ? 'text-green-400 hover:text-green-300' : 'text-foreground/35 hover:text-accent'}`}
+                              >
+                                <Layers size={11} />
+                                {hasFields ? `${req.field_positions?.length} fields placed` : 'Place signature fields'}
+                              </button>
                             </>
                           )}
                         </div>
@@ -334,41 +369,36 @@ export function ProposalManageClient({
           </div>
         </div>
 
-        {/* Right column — Audit events */}
-        <div className="rounded-xl border border-[rgba(105,106,172,0.1)] bg-[rgba(10,10,15,0.5)] p-5">
-          <h2 className="mb-4 font-semibold text-foreground">
-            Audit Trail{' '}
-            <span className="ml-1 text-xs font-normal text-slate-500">
-              ({auditEvents.length} events)
-            </span>
-          </h2>
+        {/* RIGHT COLUMN — Audit trail */}
+        <div className="rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] p-5">
+          <button
+            onClick={() => setAuditExpanded(!auditExpanded)}
+            className="flex w-full items-center justify-between"
+          >
+            <h2 className="font-semibold text-foreground">
+              Audit Trail
+              <span className="ml-2 text-xs font-normal text-foreground/30">({auditEvents.length} events)</span>
+            </h2>
+            {auditExpanded ? <ChevronUp size={15} className="text-foreground/30" /> : <ChevronDown size={15} className="text-foreground/30" />}
+          </button>
 
           {auditEvents.length === 0 ? (
-            <p className="text-sm text-slate-500">No events recorded yet. Events appear when the proposal is viewed or signed.</p>
+            <p className="mt-3 text-sm font-light text-foreground/35">No events yet. Events appear when the proposal is viewed or signed.</p>
           ) : (
-            <div className="max-h-[600px] overflow-y-auto space-y-2 pr-1">
+            <div className={`mt-4 space-y-2 overflow-y-auto transition-all ${auditExpanded ? 'max-h-[600px]' : 'max-h-64'}`}>
               {auditEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-start gap-3 rounded-lg border border-[rgba(105,106,172,0.06)] bg-[rgba(2,2,2,0.3)] p-3"
-                >
-                  <span className="text-base leading-none mt-0.5">
-                    {EVENT_ICONS[event.event_type] ?? '●'}
-                  </span>
+                <div key={event.id}
+                  className="flex items-start gap-3 rounded-lg border border-foreground/[0.05] bg-foreground/[0.01] p-3">
+                  <span className="text-base leading-none mt-0.5 shrink-0">{EVENT_ICONS[event.event_type] ?? '●'}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <code className="text-xs font-mono text-tertiary">{event.event_type}</code>
-                      <span className="shrink-0 text-xs text-slate-600">
+                      <code className="text-xs font-mono text-secondary">{event.event_type}</code>
+                      <span className="shrink-0 text-xs text-foreground/25">
                         {new Date(event.created_at).toLocaleString()}
                       </span>
                     </div>
                     {event.ip_address && (
-                      <p className="mt-0.5 text-xs text-slate-600">IP: {event.ip_address}</p>
-                    )}
-                    {Object.keys(event.event_meta as object).length > 0 && (
-                      <pre className="mt-1 text-xs text-slate-600 overflow-hidden text-ellipsis whitespace-nowrap">
-                        {JSON.stringify(event.event_meta)}
-                      </pre>
+                      <p className="mt-0.5 text-xs text-foreground/25">IP: {event.ip_address}</p>
                     )}
                   </div>
                 </div>
@@ -378,75 +408,78 @@ export function ProposalManageClient({
         </div>
       </div>
 
+      {/* PDF Field Placer Modal */}
+      {fieldPlacerSigner && sourcePdfSignedUrl && (
+        <div className="fixed inset-0 z-50 flex flex-col">
+          <div className="flex items-center justify-between border-b border-foreground/[0.08] bg-background/95 px-6 py-4 backdrop-blur-xl">
+            <div>
+              <h2 className="font-semibold text-foreground">Place Signature Fields</h2>
+              <p className="text-sm text-foreground/40">Signing: {fieldPlacerSigner.name}</p>
+            </div>
+            <button
+              onClick={() => setFieldPlacerSigner(null)}
+              className="rounded-lg border border-foreground/[0.08] px-4 py-2 text-sm text-foreground/40 hover:text-foreground transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden bg-background">
+            <PDFFieldPlacer
+              pdfUrl={sourcePdfSignedUrl}
+              signatureRequestId={fieldPlacerSigner.signature_requests?.[0]?.id ?? ''}
+              existingFields={fieldPlacerSigner.signature_requests?.[0]?.field_positions ?? []}
+              onSave={(fields) => handleSaveFields(
+                fieldPlacerSigner.id,
+                fieldPlacerSigner.signature_requests?.[0]?.id ?? '',
+                fields
+              )}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Add Signer Modal */}
-      <Modal
-        open={addSignerOpen}
-        onClose={() => setAddSignerOpen(false)}
-        title="Add Signer"
-        description="Add a person who needs to sign this proposal. A unique sign link will be generated."
-      >
+      <Modal open={addSignerOpen} onClose={() => setAddSignerOpen(false)}
+        title="Add Signer" description="Add a signer to this proposal. A unique sign link will be generated.">
         <form onSubmit={handleAddSigner} className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-300">
-              Full Name <span className="text-red-400">*</span>
-            </label>
-            <input
-              name="name"
-              required
-              placeholder="Jane Smith"
-              className="w-full rounded-xl border border-[rgba(105,106,172,0.2)] bg-[rgba(2,2,2,0.6)] px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-accent/50"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-300">
-              Email Address <span className="text-red-400">*</span>
-            </label>
-            <input
-              name="email"
-              type="email"
-              required
-              placeholder="jane@avant.com"
-              className="w-full rounded-xl border border-[rgba(105,106,172,0.2)] bg-[rgba(2,2,2,0.6)] px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-accent/50"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-300">
-              Role / Title (optional)
-            </label>
-            <input
-              name="role"
-              placeholder="VP Partnerships"
-              className="w-full rounded-xl border border-[rgba(105,106,172,0.2)] bg-[rgba(2,2,2,0.6)] px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-accent/50"
-            />
-          </div>
-          <Button type="submit" loading={addingSignerLoading} className="w-full">
+          {[
+            { name: 'name', label: 'Full Name', type: 'text', placeholder: 'Jane Smith', required: true },
+            { name: 'email', label: 'Email', type: 'email', placeholder: 'jane@avant.com', required: true },
+            { name: 'role', label: 'Role / Title (optional)', type: 'text', placeholder: 'VP Partnerships', required: false },
+          ].map((field) => (
+            <div key={field.name}>
+              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-foreground/35">{field.label}</label>
+              <input name={field.name} type={field.type} required={field.required} placeholder={field.placeholder}
+                className="input-field w-full rounded-xl px-4 py-3 text-sm" />
+            </div>
+          ))}
+          <button type="submit" disabled={addingSignerLoading}
+            className="flex w-full items-center justify-center gap-2 rounded-[40px] py-3 text-sm font-medium text-foreground btn-primary disabled:opacity-50">
+            {addingSignerLoading ? (
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : <Plus size={15} />}
             Add Signer + Generate Link
-          </Button>
+          </button>
         </form>
       </Modal>
 
       {/* Share Links Modal */}
-      <Modal
-        open={shareModalOpen}
-        onClose={() => setShareModalOpen(false)}
-        title="Share Links"
-        description="Copy and send these links to the appropriate recipients."
-        size="lg"
-      >
+      <Modal open={shareModalOpen} onClose={() => setShareModalOpen(false)}
+        title="Share Links" description="Copy and send these links to the appropriate recipients." size="lg">
         <div className="space-y-4">
           {shareData.map((link) => (
             <div key={link.label}>
-              <p className="mb-1.5 text-xs font-semibold text-slate-400">{link.label}</p>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-foreground/35">{link.label}</p>
               <div className="flex gap-2">
-                <code className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-xl border border-[rgba(105,106,172,0.15)] bg-[rgba(2,2,2,0.5)] px-3 py-2.5 text-xs text-tertiary">
+                <code className="flex-1 truncate rounded-xl border border-foreground/[0.08] bg-foreground/[0.02] px-3 py-2.5 text-xs text-secondary">
                   {link.url}
                 </code>
-                <button
-                  onClick={() => copyToClipboard(link.url, link.label)}
-                  className="flex items-center gap-1.5 rounded-xl border border-[rgba(105,106,172,0.2)] px-3 py-2 text-xs text-slate-300 transition-all hover:border-accent/40 hover:text-white"
-                >
-                  <Copy size={12} />
-                  Copy
+                <button onClick={() => copy(link.url, link.label)}
+                  className="flex items-center gap-1.5 rounded-xl border border-foreground/[0.08] px-3 py-2 text-xs text-foreground/40 transition-all hover:text-foreground">
+                  <Copy size={11} />Copy
                 </button>
               </div>
             </div>

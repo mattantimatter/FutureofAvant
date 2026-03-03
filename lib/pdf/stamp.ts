@@ -1,4 +1,5 @@
-import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib'
+import { PDFDocument, PDFFont, StandardFonts, rgb, degrees } from 'pdf-lib'
+import type { FieldPosition } from '@/components/admin/PDFFieldPlacer'
 
 export interface SignatureBlock {
   signerName: string
@@ -10,265 +11,217 @@ export interface SignatureBlock {
   initialsText?: string
   ipAddress?: string
   acceptanceText?: string
+  fieldPositions?: FieldPosition[]
 }
 
 /**
- * Appends a signature page to an existing PDF and stamps signature block.
+ * Stamps a signature block onto an existing PDF.
+ * If fieldPositions is set and non-empty, stamps at those exact page coordinates.
+ * Otherwise, appends a dedicated signature page.
  */
 export async function stampSignaturePdf(
   sourcePdfBytes: Uint8Array,
   block: SignatureBlock
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(sourcePdfBytes)
-  await appendSignaturePage(pdfDoc, block)
+
+  if (block.fieldPositions && block.fieldPositions.length > 0) {
+    await stampAtFieldPositions(pdfDoc, block)
+    await appendAuditPage(pdfDoc, block)
+  } else {
+    await appendSignaturePage(pdfDoc, block)
+  }
+
   return pdfDoc.save()
 }
 
 /**
- * Generates a standalone signature page PDF when no source PDF exists.
+ * Generates a standalone signature-page PDF (no source PDF uploaded).
  */
 export async function generateSignaturePage(
   proposalId: string,
   block: SignatureBlock
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create()
-  // First page — cover
-  const coverPage = pdfDoc.addPage([595, 842])
-  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-  const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica)
+  const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+  const regular = await pdfDoc.embedFont(StandardFonts.Helvetica)
 
-  const { width, height } = coverPage.getSize()
+  const cover = pdfDoc.addPage([595, 842])
+  const { width, height } = cover.getSize()
 
-  // Dark background
-  coverPage.drawRectangle({
-    x: 0, y: 0, width, height,
-    color: rgb(0.04, 0.055, 0.1),
-  })
-
-  // Purple accent bar at top
-  coverPage.drawRectangle({
-    x: 0, y: height - 6, width, height: 6,
-    color: rgb(0.42, 0.28, 1),
-  })
-
-  // Logo area
-  coverPage.drawText('AVANT × ANTIMATTER AI', {
-    x: 50, y: height - 60,
-    font: helveticaBold, size: 18,
-    color: rgb(0.42, 0.28, 1),
-  })
-
-  coverPage.drawText('ATOM Deployment Proposal', {
-    x: 50, y: height - 85,
-    font: helvetica, size: 12,
-    color: rgb(0.6, 0.6, 0.7),
-  })
-
-  // Divider
-  coverPage.drawLine({
-    start: { x: 50, y: height - 100 },
-    end: { x: width - 50, y: height - 100 },
-    thickness: 1, color: rgb(0.42, 0.28, 1),
-  })
-
-  // Title
-  coverPage.drawText('Signature Page', {
-    x: 50, y: height - 140,
-    font: helveticaBold, size: 24,
-    color: rgb(0.97, 0.98, 1),
-  })
-
-  coverPage.drawText('Electronic Signature Record', {
-    x: 50, y: height - 168,
-    font: helvetica, size: 14,
-    color: rgb(0.6, 0.6, 0.7),
-  })
+  cover.drawRectangle({ x: 0, y: 0, width, height, color: rgb(0.008, 0.008, 0.008) })
+  cover.drawRectangle({ x: 0, y: height - 5, width, height: 5, color: rgb(0.41, 0.416, 0.674) })
+  cover.drawText('AVANT PATHFINDER × ANTIMATTER AI', { x: 50, y: height - 40, font: bold, size: 11, color: rgb(0.41, 0.416, 0.674) })
+  cover.drawText('ATOM Deployment Proposal — Signature Page', { x: 50, y: height - 60, font: regular, size: 12, color: rgb(0.96, 0.965, 0.992) })
+  cover.drawText(`ID: ${proposalId.slice(0, 8).toUpperCase()}`, { x: 50, y: height - 82, font: regular, size: 9, color: rgb(0.5, 0.5, 0.6) })
 
   await appendSignaturePage(pdfDoc, block)
   return pdfDoc.save()
 }
 
-async function appendSignaturePage(pdfDoc: PDFDocument, block: SignatureBlock) {
-  const page = pdfDoc.addPage([595, 842])
-  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-  const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica)
-  const courier = await pdfDoc.embedFont(StandardFonts.Courier)
+// ─── Helpers ────────────────────────────────────────────────────
 
-  const { width, height } = page.getSize()
-  const purple = rgb(0.42, 0.28, 1)
-  const white = rgb(0.97, 0.98, 1)
-  const gray = rgb(0.6, 0.6, 0.7)
-  const darkBg = rgb(0.04, 0.055, 0.1)
-  const cardBg = rgb(0.06, 0.08, 0.145)
+async function stampAtFieldPositions(pdfDoc: PDFDocument, block: SignatureBlock) {
+  const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+  const regular = await pdfDoc.embedFont(StandardFonts.Helvetica)
+  const pages = pdfDoc.getPages()
+  const signedDate = new Date(block.signedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
-  // Background
-  page.drawRectangle({ x: 0, y: 0, width, height, color: darkBg })
-  // Top bar
-  page.drawRectangle({ x: 0, y: height - 6, width, height: 6, color: purple })
+  for (const field of block.fieldPositions ?? []) {
+    const pageIndex = field.page - 1
+    if (pageIndex < 0 || pageIndex >= pages.length) continue
+    const page = pages[pageIndex]
+    const { x, y, width: w, height: h } = field
 
-  // Header
-  page.drawText('SIGNATURE PAGE', {
-    x: 50, y: height - 40,
-    font: helveticaBold, size: 10,
-    color: purple,
-  })
+    page.drawRectangle({ x, y, width: w, height: h, color: rgb(0.96, 0.965, 0.992), borderColor: rgb(0.41, 0.416, 0.674), borderWidth: 1, opacity: 0.92 })
 
-  page.drawText('Avant × Antimatter AI — ATOM Deployment Proposal', {
-    x: 50, y: height - 58,
-    font: helveticaBold, size: 14,
-    color: white,
-  })
-
-  // Divider
-  page.drawLine({
-    start: { x: 50, y: height - 72 },
-    end: { x: width - 50, y: height - 72 },
-    thickness: 0.5, color: rgb(0.42, 0.28, 1),
-  })
-
-  let y = height - 100
-
-  // Signer info card
-  const cardX = 50
-  const cardW = width - 100
-  const cardH = 90
-  page.drawRectangle({ x: cardX, y: y - cardH + 16, width: cardW, height: cardH, color: cardBg })
-  page.drawRectangle({ x: cardX, y: y + 16, width: 4, height: cardH, color: purple })
-
-  page.drawText('SIGNER INFORMATION', { x: cardX + 12, y: y, font: helveticaBold, size: 8, color: purple })
-  y -= 16
-  page.drawText(`Name: ${block.signerName}`, { x: cardX + 12, y, font: helveticaBold, size: 11, color: white })
-  y -= 16
-  page.drawText(`Email: ${block.signerEmail}`, { x: cardX + 12, y, font: helvetica, size: 10, color: gray })
-  y -= 14
-  page.drawText(`Signed: ${new Date(block.signedAt).toUTCString()}`, { x: cardX + 12, y, font: courier, size: 8, color: gray })
-  if (block.ipAddress) {
-    y -= 12
-    page.drawText(`IP Address: ${block.ipAddress}`, { x: cardX + 12, y, font: courier, size: 8, color: gray })
-  }
-
-  y -= 30
-
-  // Signature section
-  page.drawText('SIGNATURE', { x: 50, y, font: helveticaBold, size: 8, color: purple })
-  y -= 12
-
-  const sigBoxH = 60
-  page.drawRectangle({ x: 50, y: y - sigBoxH, width: 240, height: sigBoxH, color: cardBg })
-  page.drawRectangle({ x: 50, y: y - sigBoxH, width: 240, height: sigBoxH,
-    borderColor: rgb(0.42, 0.28, 0.5), borderWidth: 0.5 })
-
-  if (block.signatureType === 'typed' && block.signatureText) {
-    // Draw typed signature
-    const sigFontSize = Math.min(24, Math.max(10, 200 / block.signatureText.length))
-    page.drawText(block.signatureText, {
-      x: 60, y: y - sigBoxH / 2 - 8,
-      font: helveticaBold, size: sigFontSize,
-      color: white,
-    })
-  } else if (block.signatureType === 'drawn' && block.signatureDataURL) {
-    // Embed drawn signature image
-    try {
-      const base64Data = block.signatureDataURL.replace(/^data:image\/\w+;base64,/, '')
-      const imageBytes = Buffer.from(base64Data, 'base64')
-      const image = await pdfDoc.embedPng(imageBytes)
-      const imgDims = image.scaleToFit(220, 50)
-      page.drawImage(image, {
-        x: 60, y: y - 55,
-        width: imgDims.width, height: imgDims.height,
-      })
-    } catch (e) {
-      page.drawText('[Drawn signature]', { x: 60, y: y - 35, font: helvetica, size: 10, color: gray })
+    if (field.type === 'signature') {
+      if (block.signatureType === 'drawn' && block.signatureDataURL) {
+        try {
+          const base64 = block.signatureDataURL.replace(/^data:image\/\w+;base64,/, '')
+          const img = await pdfDoc.embedPng(Buffer.from(base64, 'base64'))
+          const dims = img.scaleToFit(w - 8, h - 18)
+          page.drawImage(img, { x: x + 4, y: y + 12, width: dims.width, height: dims.height })
+        } catch {
+          drawTypedSig(page, block.signatureText ?? block.signerName, x, y, w, h, bold)
+        }
+      } else {
+        drawTypedSig(page, block.signatureText ?? block.signerName, x, y, w, h, bold)
+      }
+      page.drawLine({ start: { x: x + 4, y: y + 10 }, end: { x: x + w - 4, y: y + 10 }, thickness: 0.5, color: rgb(0.41, 0.416, 0.674) })
+      page.drawText(`${block.signerName} · ${signedDate}`, { x: x + 4, y: y + 2, font: regular, size: 5.5, color: rgb(0.4, 0.4, 0.5) })
+    } else {
+      const initials = block.initialsText ?? block.signerName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+      const fontSize = Math.min(h * 0.5, 20)
+      page.drawText(initials, { x: x + w / 2 - initials.length * fontSize * 0.32, y: y + h / 2 - fontSize * 0.35, font: bold, size: fontSize, color: rgb(0.1, 0.1, 0.15) })
+      page.drawLine({ start: { x: x + 4, y: y + 8 }, end: { x: x + w - 4, y: y + 8 }, thickness: 0.5, color: rgb(0.41, 0.416, 0.674) })
     }
   }
+}
 
-  page.drawText(block.signerName, {
-    x: 55, y: y - sigBoxH - 12,
-    font: courier, size: 8, color: gray,
-  })
-  page.drawText('Signature', { x: 55, y: y - sigBoxH - 22, font: helvetica, size: 7, color: rgb(0.4, 0.4, 0.5) })
+function drawTypedSig(page: ReturnType<PDFDocument['getPages']>[number], text: string, x: number, y: number, w: number, h: number, font: PDFFont) {
+  const fontSize = Math.max(8, Math.min(h * 0.45, (w - 16) / Math.max(text.length * 0.6, 1), 24))
+  page.drawText(text, { x: x + 6, y: y + h / 2 - fontSize * 0.35, font, size: fontSize, color: rgb(0.08, 0.08, 0.15) })
+}
 
-  // Initials section
-  const initialsX = 320
-  page.drawText('INITIALS', { x: initialsX, y: y + 12, font: helveticaBold, size: 8, color: purple })
-  const initialsBoxH = 40
-  page.drawRectangle({ x: initialsX, y: y - initialsBoxH, width: 120, height: initialsBoxH, color: cardBg })
-  page.drawRectangle({ x: initialsX, y: y - initialsBoxH, width: 120, height: initialsBoxH,
-    borderColor: rgb(0.42, 0.28, 0.5), borderWidth: 0.5 })
+async function appendAuditPage(pdfDoc: PDFDocument, block: SignatureBlock) {
+  const page = pdfDoc.addPage([595, 842])
+  const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+  const regular = await pdfDoc.embedFont(StandardFonts.Helvetica)
+  const courier = await pdfDoc.embedFont(StandardFonts.Courier)
+  const { width, height } = page.getSize()
+  const accent = rgb(0.41, 0.416, 0.674)
+  const gray = rgb(0.5, 0.5, 0.6)
 
-  if (block.initialsText) {
-    page.drawText(block.initialsText, {
-      x: initialsX + 10, y: y - initialsBoxH / 2 - 8,
-      font: helveticaBold, size: 18, color: white,
-    })
-  }
+  page.drawRectangle({ x: 0, y: 0, width, height, color: rgb(0.008, 0.008, 0.008) })
+  page.drawRectangle({ x: 0, y: height - 4, width, height: 4, color: accent })
+  page.drawText('ELECTRONIC SIGNATURE AUDIT RECORD', { x: 50, y: height - 32, font: bold, size: 9, color: accent })
+  page.drawLine({ start: { x: 50, y: height - 45 }, end: { x: width - 50, y: height - 45 }, thickness: 0.5, color: accent })
 
-  y -= sigBoxH + 40
-
-  // Acceptance text
-  page.drawText('ACCEPTANCE CLAUSE', { x: 50, y, font: helveticaBold, size: 8, color: purple })
-  y -= 12
-
-  const maxCharsPerLine = 90
-  const acceptanceLines = wrapText(block.acceptanceText ?? '', maxCharsPerLine)
-  const maxLines = Math.min(acceptanceLines.length, 10)
-
-  page.drawRectangle({
-    x: 50, y: y - maxLines * 11 - 10, width: width - 100, height: maxLines * 11 + 20, color: cardBg
-  })
-
-  for (let i = 0; i < maxLines; i++) {
-    page.drawText(acceptanceLines[i], {
-      x: 58, y: y - i * 11,
-      font: helvetica, size: 7, color: gray,
-    })
-  }
-
-  y -= maxLines * 11 + 30
-
-  // Audit metadata
-  page.drawLine({
-    start: { x: 50, y }, end: { x: width - 50, y },
-    thickness: 0.5, color: rgb(0.42, 0.28, 1),
-  })
-
-  y -= 16
-  page.drawText('AUDIT RECORD', { x: 50, y, font: helveticaBold, size: 8, color: purple })
-  y -= 12
-  const auditLines = [
-    `Document: Avant × Antimatter AI — ATOM Deployment Proposal`,
-    `Signature Method: ${block.signatureType === 'typed' ? 'Electronic Typed Signature' : 'Electronic Drawn Signature'}`,
+  let y = height - 65
+  const info = [
+    `Signer: ${block.signerName} <${block.signerEmail}>`,
     `Timestamp: ${new Date(block.signedAt).toUTCString()}`,
+    `Method: ${block.signatureType === 'typed' ? 'Typed Signature' : 'Drawn Signature'}`,
     `IP Address: ${block.ipAddress ?? 'Not captured'}`,
-    `This electronic signature carries the same legal weight as a handwritten signature.`,
+    `Fields Stamped at Specified Positions: ${block.fieldPositions?.length ?? 0}`,
   ]
-  auditLines.forEach((line) => {
+  info.forEach((line) => { page.drawText(line, { x: 50, y, font: regular, size: 9, color: gray }); y -= 15 })
+
+  y -= 10
+  page.drawText('ACCEPTANCE CLAUSE', { x: 50, y, font: bold, size: 8, color: accent })
+  y -= 13
+  wrapText(block.acceptanceText ?? '', 88).slice(0, 10).forEach((line) => {
     page.drawText(line, { x: 50, y, font: courier, size: 7.5, color: gray })
     y -= 11
   })
+}
 
-  // Page watermark
+async function appendSignaturePage(pdfDoc: PDFDocument, block: SignatureBlock) {
+  const page = pdfDoc.addPage([595, 842])
+  const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+  const regular = await pdfDoc.embedFont(StandardFonts.Helvetica)
+  const courier = await pdfDoc.embedFont(StandardFonts.Courier)
+  const { width, height } = page.getSize()
+  const bg = rgb(0.008, 0.008, 0.008)
+  const cardBg = rgb(0.03, 0.03, 0.05)
+  const accent = rgb(0.41, 0.416, 0.674)
+  const white = rgb(0.96, 0.965, 0.992)
+  const gray = rgb(0.5, 0.5, 0.6)
+
+  page.drawRectangle({ x: 0, y: 0, width, height, color: bg })
+  page.drawRectangle({ x: 0, y: height - 5, width, height: 5, color: accent })
+  page.drawText('SIGNATURE PAGE', { x: 50, y: height - 35, font: bold, size: 9, color: accent })
+  page.drawText('Avant Pathfinder × Antimatter AI — ATOM Deployment Proposal', { x: 50, y: height - 52, font: bold, size: 13, color: white })
+  page.drawLine({ start: { x: 50, y: height - 67 }, end: { x: width - 50, y: height - 67 }, thickness: 0.5, color: accent })
+
+  let y = height - 92
+
+  // Signer info card
+  page.drawRectangle({ x: 50, y: y - 72, width: width - 100, height: 76, color: cardBg })
+  page.drawRectangle({ x: 50, y: y - 72, width: 3, height: 76, color: accent })
+  page.drawText('SIGNER', { x: 60, y, font: bold, size: 8, color: accent })
+  y -= 14; page.drawText(block.signerName, { x: 60, y, font: bold, size: 13, color: white })
+  y -= 14; page.drawText(block.signerEmail, { x: 60, y, font: regular, size: 10, color: gray })
+  y -= 12; page.drawText(`Signed: ${new Date(block.signedAt).toUTCString()}`, { x: 60, y, font: courier, size: 8, color: gray })
+  if (block.ipAddress) { y -= 11; page.drawText(`IP: ${block.ipAddress}`, { x: 60, y, font: courier, size: 8, color: gray }) }
+
+  y -= 26
+
+  // Signature box
+  page.drawText('SIGNATURE', { x: 50, y, font: bold, size: 8, color: accent }); y -= 12
+  const sigH = 65
+  page.drawRectangle({ x: 50, y: y - sigH, width: 250, height: sigH, color: cardBg, borderColor: accent, borderWidth: 0.5 })
+  if (block.signatureType === 'typed' && block.signatureText) {
+    const fs = Math.min(22, Math.max(10, 180 / block.signatureText.length))
+    page.drawText(block.signatureText, { x: 60, y: y - sigH / 2 - 8, font: bold, size: fs, color: white })
+  } else if (block.signatureType === 'drawn' && block.signatureDataURL) {
+    try {
+      const img = await pdfDoc.embedPng(Buffer.from(block.signatureDataURL.replace(/^data:image\/\w+;base64,/, ''), 'base64'))
+      const dims = img.scaleToFit(230, 55)
+      page.drawImage(img, { x: 60, y: y - 60, width: dims.width, height: dims.height })
+    } catch { page.drawText('[Drawn signature]', { x: 60, y: y - 35, font: regular, size: 10, color: gray }) }
+  }
+
+  // Initials box
+  page.drawText('INITIALS', { x: 330, y: y + 12, font: bold, size: 8, color: accent })
+  const initH = 44
+  page.drawRectangle({ x: 330, y: y - initH, width: 120, height: initH, color: cardBg, borderColor: accent, borderWidth: 0.5 })
+  if (block.initialsText) {
+    page.drawText(block.initialsText, { x: 340, y: y - initH / 2 - 8, font: bold, size: 18, color: white })
+  }
+  page.drawText(block.signerName, { x: 55, y: y - sigH - 12, font: courier, size: 8, color: gray })
+  y -= sigH + 32
+
+  // Acceptance text
+  page.drawText('ACCEPTANCE CLAUSE', { x: 50, y, font: bold, size: 8, color: accent }); y -= 12
+  const lines = wrapText(block.acceptanceText ?? '', 90)
+  const max = Math.min(lines.length, 10)
+  page.drawRectangle({ x: 50, y: y - max * 11 - 10, width: width - 100, height: max * 11 + 20, color: cardBg })
+  lines.slice(0, max).forEach((line, i) => { page.drawText(line, { x: 58, y: y - i * 11, font: regular, size: 7.5, color: gray }) })
+  y -= max * 11 + 26
+
+  page.drawLine({ start: { x: 50, y }, end: { x: width - 50, y }, thickness: 0.5, color: accent }); y -= 14
+  page.drawText('AUDIT', { x: 50, y, font: bold, size: 8, color: accent }); y -= 12;
+  [`Method: ${block.signatureType === 'typed' ? 'Electronic Typed Signature' : 'Electronic Drawn Signature'}`,
+    `IP: ${block.ipAddress ?? 'Not captured'}`,
+    'This signature carries the same legal weight as a handwritten signature.',
+  ].forEach((line) => { page.drawText(line, { x: 50, y, font: courier, size: 7.5, color: gray }); y -= 11 })
+
   page.drawText('EXECUTED', {
-    x: width / 2 - 40, y: height / 2,
-    font: helveticaBold, size: 48,
-    color: rgb(0.42, 0.28, 1),
-    rotate: degrees(45),
+    x: width / 2 - 40, y: height / 2, font: bold, size: 48,
+    color: accent, opacity: 0.05, rotate: degrees(45),
   })
 }
 
-function wrapText(text: string, maxCharsPerLine: number): string[] {
+function wrapText(text: string, maxChars: number): string[] {
   const words = text.split(' ')
   const lines: string[] = []
-  let currentLine = ''
-
-  for (const word of words) {
-    if ((currentLine + ' ' + word).trim().length <= maxCharsPerLine) {
-      currentLine = (currentLine + ' ' + word).trim()
-    } else {
-      if (currentLine) lines.push(currentLine)
-      currentLine = word
-    }
+  let cur = ''
+  for (const w of words) {
+    if ((cur + ' ' + w).trim().length <= maxChars) { cur = (cur + ' ' + w).trim() }
+    else { if (cur) lines.push(cur); cur = w }
   }
-  if (currentLine) lines.push(currentLine)
+  if (cur) lines.push(cur)
   return lines
 }

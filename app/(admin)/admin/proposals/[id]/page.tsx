@@ -17,16 +17,17 @@ export default async function ManageProposalPage({ params }: PageProps) {
 
   const signers = await getSignersByProposal(id)
 
-  // Get audit events
   const supabase = createServerClient()
+
+  // Audit events
   const { data: auditEvents } = await supabase
     .from('audit_events')
     .select('*')
     .eq('proposal_id', id)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(100)
 
-  // Generate signed PDF download URL if exists
+  // Signed PDF download URL
   let signedPdfUrl: string | null = null
   if (proposal.signed_pdf_path) {
     const { data } = await supabase.storage
@@ -35,13 +36,23 @@ export default async function ManageProposalPage({ params }: PageProps) {
     signedPdfUrl = data?.signedUrl ?? null
   }
 
+  // Source PDF signed URL (for the field placer)
+  let sourcePdfSignedUrl: string | null = null
+  if (proposal.source_pdf_path) {
+    const { data } = await supabase.storage
+      .from('proposal_source_pdfs')
+      .createSignedUrl(proposal.source_pdf_path, 3600)
+    sourcePdfSignedUrl = data?.signedUrl ?? null
+  }
+
   return (
     <AdminLayout>
       <ProposalManageClient
         proposal={proposal}
-        signers={signers as unknown as Parameters<typeof ProposalManageClient>[0]['signers']}
+        signers={signers as Parameters<typeof ProposalManageClient>[0]['signers']}
         auditEvents={auditEvents ?? []}
         signedPdfUrl={signedPdfUrl}
+        sourcePdfSignedUrl={sourcePdfSignedUrl}
       />
     </AdminLayout>
   )

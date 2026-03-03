@@ -68,6 +68,8 @@ export async function submitSignature(formData: FormData): Promise<SubmitSignatu
   }
 
   const proposal = sigReq.proposals as unknown as { id: string; source_pdf_path: string | null; proposal_json: ProposalJSON; public_token: string }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fieldPositions = (sigReq as any).field_positions as Array<{ id: string; type: 'signature' | 'initials'; page: number; x: number; y: number; width: number; height: number }> | null
   const signedAt = new Date().toISOString()
 
   // Upload drawn signature image to storage if present
@@ -99,6 +101,7 @@ export async function submitSignature(formData: FormData): Promise<SubmitSignatu
       initialsText: data.initialsText,
       ipAddress: data.ipAddress,
       acceptanceText: data.acceptanceText,
+      fieldPositions: fieldPositions ?? undefined,
     }
 
     let pdfBytes: Uint8Array
