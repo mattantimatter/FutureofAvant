@@ -4,12 +4,20 @@ import { z } from 'zod'
 
 const fieldSchema = z.object({
   id: z.string(),
-  type: z.enum(['signature', 'initials']),
+  type: z.enum(['signature', 'initials', 'text', 'date', 'admin_signature']),
   page: z.number().int().min(1),
   x: z.number(),
   y: z.number(),
   width: z.number().positive(),
   height: z.number().positive(),
+  label: z.string().optional(),
+  value: z.string().optional(),
+  dataURL: z.string().optional(),
+  // canvas-only coords — stripped before storing
+  canvasX: z.number().optional(),
+  canvasY: z.number().optional(),
+  canvasW: z.number().optional(),
+  canvasH: z.number().optional(),
 })
 
 const bodySchema = z.object({
@@ -31,9 +39,12 @@ export async function POST(
     const { signatureRequestId, fields } = parsed.data
     const supabase = createServerClient()
 
-    // Strip canvas-only properties before storing
-    const storableFields = fields.map(({ id, type, page, x, y, width, height }) => ({
+    // Strip canvas-only properties before storing (keep label, value, dataURL)
+    const storableFields = fields.map(({ id, type, page, x, y, width, height, label, value, dataURL }) => ({
       id, type, page, x, y, width, height,
+      ...(label ? { label } : {}),
+      ...(value ? { value } : {}),
+      ...(dataURL ? { dataURL } : {}),
     }))
 
     const { error } = await supabase

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Copy, ExternalLink, Plus, Upload, Download,
   Eye, CheckCircle, Clock, Send, RefreshCw, Mail, ChevronDown,
-  ChevronUp, PenLine, Layers,
+  ChevronUp, Layers, Trash2,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
@@ -68,6 +68,8 @@ export function ProposalManageClient({
   const [addingSignerLoading, setAddingSignerLoading] = useState(false)
   const [fieldPlacerSigner, setFieldPlacerSigner] = useState<SignerWithRequest | null>(null)
   const [auditExpanded, setAuditExpanded] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const viewerUrl = `${SITE_URL}/p/${proposal.public_token}`
@@ -126,6 +128,21 @@ export function ProposalManageClient({
       else toast(data.error ?? 'Failed', 'error')
     } catch { toast('Failed to add signer', 'error') }
     finally { setAddingSignerLoading(false) }
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/admin/proposals/${proposal.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) {
+        toast('Proposal deleted')
+        router.push('/admin')
+      } else {
+        toast(data.error ?? 'Delete failed', 'error')
+      }
+    } catch { toast('Delete failed', 'error') }
+    finally { setDeleting(false) }
   }
 
   const handleMarkSent = async () => {
@@ -188,6 +205,23 @@ export function ProposalManageClient({
               className="flex items-center gap-1.5 rounded-lg bg-yellow-500/10 px-3 py-2 text-xs text-yellow-400 transition-all hover:bg-yellow-500/20">
               <Send size={13} />Mark Sent
             </button>
+          )}
+          {!deleteConfirm ? (
+            <button onClick={() => setDeleteConfirm(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-red-500/15 px-3 py-2 text-xs text-red-400/60 transition-all hover:border-red-500/30 hover:text-red-400">
+              <Trash2 size={13} />Delete
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2">
+              <span className="text-xs text-red-400">Sure?</span>
+              <button onClick={handleDelete} disabled={deleting}
+                className="text-xs font-semibold text-red-400 hover:text-red-300">
+                {deleting ? 'Deleting...' : 'Yes, delete'}
+              </button>
+              <button onClick={() => setDeleteConfirm(false)} className="text-xs text-foreground/30 hover:text-foreground">
+                Cancel
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -330,24 +364,25 @@ export function ProposalManageClient({
                       {/* Actions row */}
                       {req && (
                         <div className="flex flex-wrap items-center gap-2 border-t border-foreground/[0.05] px-4 py-3">
-                          <button
-                            onClick={() => copy(`${SITE_URL}/p/${proposal.public_token}/sign?st=${req.sign_token}`, 'Sign link')}
-                            className="flex items-center gap-1 text-xs text-foreground/35 hover:text-foreground transition-colors">
-                            <Copy size={11} />Copy sign link
-                          </button>
-                          <span className="text-foreground/15">·</span>
-                          <button
-                            onClick={() => openShareModal(req.sign_token)}
-                            className="flex items-center gap-1 text-xs text-foreground/35 hover:text-foreground transition-colors">
-                            <ExternalLink size={11} />All links
-                          </button>
-                          <span className="text-foreground/15">·</span>
+                          {/* Sign URL display */}
+                          <div className="w-full mb-1.5">
+                            <div className="flex items-center gap-1.5 rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] px-2.5 py-1.5">
+                              <span className="text-[10px] text-foreground/25 uppercase tracking-wider shrink-0">Sign link</span>
+                              <code className="flex-1 truncate text-xs text-secondary">
+                                {SITE_URL}/p/{proposal.public_token}/sign?st={req.sign_token}
+                              </code>
+                              <button onClick={() => copy(`${SITE_URL}/p/${proposal.public_token}/sign?st=${req.sign_token}`, 'Sign link')}
+                                className="shrink-0 text-foreground/25 hover:text-foreground transition-colors"><Copy size={11} /></button>
+                              <a href={`${SITE_URL}/p/${proposal.public_token}/sign?st=${req.sign_token}`} target="_blank" rel="noopener noreferrer"
+                                className="shrink-0 text-foreground/25 hover:text-foreground transition-colors"><ExternalLink size={11} /></a>
+                            </div>
+                          </div>
                           <button
                             onClick={() => sendViaEmail(signer)}
                             className="flex items-center gap-1 text-xs text-secondary hover:text-foreground transition-colors">
                             <Mail size={11} />Send email
                           </button>
-                          {proposal.source_pdf_path && (
+                          {(proposal.source_pdf_path) && (
                             <>
                               <span className="text-foreground/15">·</span>
                               <button
@@ -355,7 +390,7 @@ export function ProposalManageClient({
                                 className={`flex items-center gap-1 text-xs transition-colors ${hasFields ? 'text-green-400 hover:text-green-300' : 'text-foreground/35 hover:text-accent'}`}
                               >
                                 <Layers size={11} />
-                                {hasFields ? `${req.field_positions?.length} fields placed` : 'Place signature fields'}
+                                {hasFields ? `${req.field_positions?.length} field${(req.field_positions?.length ?? 0) !== 1 ? 's' : ''} placed` : 'Place signature fields'}
                               </button>
                             </>
                           )}
@@ -411,16 +446,42 @@ export function ProposalManageClient({
       {/* PDF Field Placer Modal */}
       {fieldPlacerSigner && sourcePdfSignedUrl && (
         <div className="fixed inset-0 z-50 flex flex-col">
-          <div className="flex items-center justify-between border-b border-foreground/[0.08] bg-background/95 px-6 py-4 backdrop-blur-xl">
-            <div>
-              <h2 className="font-semibold text-foreground">Place Signature Fields</h2>
-              <p className="text-sm text-foreground/40">Signing: {fieldPlacerSigner.name}</p>
+          <div className="flex items-center justify-between border-b border-foreground/[0.08] bg-background/97 px-6 py-4 backdrop-blur-xl">
+            <div className="flex items-center gap-4">
+              <div>
+                <h2 className="font-semibold text-foreground">Place Signature Fields</h2>
+                <p className="text-sm text-foreground/40">
+                  Placing fields for: <span className="text-secondary font-medium">{fieldPlacerSigner.name}</span>
+                  {fieldPlacerSigner.role && <span className="text-foreground/30"> · {fieldPlacerSigner.role}</span>}
+                </p>
+              </div>
+              {/* Show other signers as switcher */}
+              {signers.length > 1 && (
+                <div className="flex items-center gap-1.5 rounded-lg border border-foreground/[0.08] bg-foreground/[0.02] p-1">
+                  {signers.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setFieldPlacerSigner(s)}
+                      className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                        s.id === fieldPlacerSigner.id
+                          ? 'bg-accent/15 text-secondary'
+                          : 'text-foreground/30 hover:text-foreground/60'
+                      }`}
+                    >
+                      {s.name.split(' ')[0]}
+                      {(s.signature_requests?.[0]?.field_positions?.length ?? 0) > 0 && (
+                        <span className="ml-1 text-green-400">✓</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <button
               onClick={() => setFieldPlacerSigner(null)}
               className="rounded-lg border border-foreground/[0.08] px-4 py-2 text-sm text-foreground/40 hover:text-foreground transition-colors"
             >
-              Cancel
+              Done
             </button>
           </div>
           <div className="flex-1 overflow-hidden bg-background">
@@ -428,6 +489,7 @@ export function ProposalManageClient({
               pdfUrl={sourcePdfSignedUrl}
               signatureRequestId={fieldPlacerSigner.signature_requests?.[0]?.id ?? ''}
               existingFields={fieldPlacerSigner.signature_requests?.[0]?.field_positions ?? []}
+              adminName="Matt Bravo"
               onSave={(fields) => handleSaveFields(
                 fieldPlacerSigner.id,
                 fieldPlacerSigner.signature_requests?.[0]?.id ?? '',

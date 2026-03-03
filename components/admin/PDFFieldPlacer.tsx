@@ -49,11 +49,12 @@ function AdminSigCapture({
   onCancel,
 }: {
   adminName: string
-  onConfirm: (value: string, dataURL?: string) => void
+  onConfirm: (value: string, dataURL?: string, addDate?: boolean) => void
   onCancel: () => void
 }) {
   const [mode, setMode] = useState<'type' | 'draw'>('type')
   const [typedSig, setTypedSig] = useState(adminName)
+  const [addDate, setAddDate] = useState(true)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [hasDrawn, setHasDrawn] = useState(false)
   const [isDrawing, setIsDrawing] = useState(false)
@@ -100,10 +101,10 @@ function AdminSigCapture({
 
   const handleConfirm = () => {
     if (mode === 'type') {
-      onConfirm(typedSig)
+      onConfirm(typedSig, undefined, addDate)
     } else {
       const dataURL = canvasRef.current?.toDataURL('image/png')
-      onConfirm(adminName, dataURL)
+      onConfirm(adminName, dataURL, addDate)
     }
   }
 
@@ -166,7 +167,25 @@ function AdminSigCapture({
           </div>
         )}
 
-        <div className="mt-5 flex gap-3">
+        {/* Auto-add date option */}
+        <label className="mt-4 flex cursor-pointer items-center gap-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] px-4 py-3">
+          <div
+            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-all ${addDate ? 'border-accent bg-accent' : 'border-foreground/20'}`}
+            onClick={() => setAddDate(!addDate)}
+          >
+            {addDate && (
+              <svg className="h-3 w-3 text-white" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground/70">Also add "Date Signed" field below</p>
+            <p className="text-xs text-foreground/35">Auto-stamps today's date adjacent to your signature</p>
+          </div>
+        </label>
+
+        <div className="mt-4 flex gap-3">
           <button onClick={onCancel}
             className="flex-1 rounded-xl border border-foreground/[0.08] py-2.5 text-sm text-foreground/40 transition-all hover:text-foreground">
             Cancel
@@ -253,6 +272,7 @@ export function PDFFieldPlacer({ pdfUrl, signatureRequestId, existingFields = []
     }
 
     if (activeType === 'admin_signature') {
+      // Store pending field; on confirm we'll also add a date field below it
       setPendingAdminField(newField)
     } else if (activeType === 'text') {
       setTextLabelModal(newField)
@@ -413,8 +433,29 @@ export function PDFFieldPlacer({ pdfUrl, signatureRequestId, existingFields = []
       {pendingAdminField && (
         <AdminSigCapture
           adminName={adminName}
-          onConfirm={(value, dataURL) => {
-            setFields(p => [...p, { ...pendingAdminField, value, dataURL }])
+          onConfirm={(value, dataURL, addDate) => {
+            const sigField = { ...pendingAdminField, value, dataURL }
+            const additions: FieldPosition[] = [sigField]
+            // Auto-add a date field directly below the admin signature
+            if (addDate) {
+              const dateW = 130
+              const dateH = 32
+              const dateCfg = FIELD_CONFIG['date']
+              additions.push({
+                id: Math.random().toString(36).slice(2),
+                type: 'date',
+                page: pendingAdminField.page,
+                x: pendingAdminField.x,
+                y: pendingAdminField.y - dateH - 4, // below in PDF coords (bottom-origin)
+                width: dateW,
+                height: dateH,
+                canvasX: (pendingAdminField.canvasX ?? 0),
+                canvasY: (pendingAdminField.canvasY ?? 0) + (pendingAdminField.canvasH ?? 60) + 4,
+                canvasW: dateW,
+                canvasH: dateH,
+              })
+            }
+            setFields(p => [...p, ...additions])
             setPendingAdminField(null)
           }}
           onCancel={() => setPendingAdminField(null)}
