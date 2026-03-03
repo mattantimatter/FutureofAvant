@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { SectionNav } from './SectionNav'
 import { AskAtomRail } from './AskAtomRail'
 import { HeroSection } from './HeroSection'
@@ -16,7 +16,7 @@ import { CapabilityMatrix } from './CapabilityMatrix'
 import type { ProposalJSON, ProposalSection } from '@/lib/seed'
 import type { Proposal } from '@/lib/supabase/types'
 import Link from 'next/link'
-import { PenLine, Download, Share2, Menu, X } from 'lucide-react'
+import { PenLine, Download, Share2, Menu, X, Monitor, Smartphone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/Badge'
 
@@ -61,8 +61,31 @@ const statusLabel: Record<string, string> = {
   draft: 'Draft',
 }
 
+const MOBILE_GATE_KEY = 'avant-atom-mobile-gate-dismissed'
+const MOBILE_BREAKPOINT_PX = 768
+
 export function ProposalLayout({ proposal, proposalJson, signToken, sourcePdfDownloadUrl }: ProposalLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState<boolean | null>(null)
+  const [mobileGateDismissed, setMobileGateDismissed] = useState(false)
+
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`)
+    const check = () => setIsMobile(mql.matches)
+    check()
+    mql.addEventListener('change', check)
+    return () => mql.removeEventListener('change', check)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    setMobileGateDismissed(sessionStorage.getItem(MOBILE_GATE_KEY) === '1')
+  }, [])
+
+  const dismissMobileGate = () => {
+    setMobileGateDismissed(true)
+    if (typeof window !== 'undefined') sessionStorage.setItem(MOBILE_GATE_KEY, '1')
+  }
 
   const handleShare = async () => {
     const url = window.location.href
@@ -73,8 +96,30 @@ export function ProposalLayout({ proposal, proposalJson, signToken, sourcePdfDow
     }
   }
 
+  const showMobileGate = isMobile === true && !mobileGateDismissed
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Mobile "view on desktop" gate — only on small viewports until dismissed */}
+      {showMobileGate && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/98 px-6 py-8 text-center backdrop-blur-sm md:hidden">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-foreground/[0.06] mb-6">
+            <Monitor className="h-7 w-7 text-foreground/60" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground mb-2">For best experience, view on desktop</h2>
+          <p className="text-sm text-foreground/60 max-w-xs mb-8">
+            This proposal is designed for a larger screen. You can continue on mobile if you prefer.
+          </p>
+          <button
+            onClick={dismissMobileGate}
+            className="inline-flex items-center gap-2 rounded-[40px] border border-accent/30 bg-accent/10 px-6 py-3 text-sm font-medium text-secondary transition-all hover:bg-accent/20 hover:border-accent/50"
+          >
+            <Smartphone size={16} />
+            Continue to mobile view
+          </button>
+        </div>
+      )}
+
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-foreground/[0.06] bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1800px] items-center justify-between px-4 py-3">
@@ -100,18 +145,12 @@ export function ProposalLayout({ proposal, proposalJson, signToken, sourcePdfDow
             >
               <Share2 size={11} />Share
             </button>
-            {signToken ? (
-              <Link
-                href={`/p/${proposal.public_token}/sign?st=${signToken}`}
-                className="flex items-center gap-1.5 rounded-[40px] px-4 py-1.5 text-xs font-semibold text-foreground btn-primary"
-              >
-                <PenLine size={12} />Sign
-              </Link>
-            ) : (
-              <span className="rounded-lg border border-accent/20 px-3 py-1.5 text-xs text-accent/60">
-                Request sign link
-              </span>
-            )}
+            <Link
+              href={signToken ? `/p/${proposal.public_token}/sign?st=${signToken}` : `/p/${proposal.public_token}/sign`}
+              className="flex items-center gap-1.5 rounded-[40px] px-4 py-1.5 text-xs font-semibold text-foreground btn-primary"
+            >
+              <PenLine size={12} />Sign Now
+            </Link>
           </div>
         </div>
       </header>
@@ -159,16 +198,12 @@ export function ProposalLayout({ proposal, proposalJson, signToken, sourcePdfDow
 
       {/* Mobile sticky bottom bar */}
       <div className="fixed bottom-0 inset-x-0 z-30 flex items-center justify-around border-t border-foreground/[0.08] bg-background/96 px-4 py-3 backdrop-blur-xl md:hidden">
-        {signToken ? (
-          <Link
-            href={`/p/${proposal.public_token}/sign?st=${signToken}`}
-            className="flex items-center gap-1.5 rounded-[40px] px-5 py-2 text-sm font-semibold text-foreground btn-primary"
-          >
-            <PenLine size={14} />Sign
-          </Link>
-        ) : (
-          <span className="text-xs text-foreground/30">No sign token</span>
-        )}
+        <Link
+          href={signToken ? `/p/${proposal.public_token}/sign?st=${signToken}` : `/p/${proposal.public_token}/sign`}
+          className="flex items-center gap-1.5 rounded-[40px] px-5 py-2 text-sm font-semibold text-foreground btn-primary"
+        >
+          <PenLine size={14} />Sign Now
+        </Link>
         <button onClick={() => window.print()} className="flex items-center gap-1.5 rounded-xl border border-foreground/10 px-4 py-2 text-sm text-foreground/60">
           <Download size={13} />PDF
         </button>

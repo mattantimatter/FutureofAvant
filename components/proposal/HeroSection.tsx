@@ -157,7 +157,7 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
         <div className="mb-10 flex flex-wrap items-center justify-center gap-4">
           <Link href={signHref}
             className="group inline-flex items-center justify-center gap-3 rounded-[40px] py-4 pl-8 pr-4 text-base font-semibold text-white shadow-lg transition-all duration-300 btn-primary">
-            <span>Review &amp; Sign</span>
+            <span>Sign Now</span>
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
               <ArrowRight size={16} />
             </span>

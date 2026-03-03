@@ -109,24 +109,18 @@ export function NextSteps({ content, proposalToken, signToken }: NextStepsProps)
 
               {/* Route each button correctly */}
               {action.href === '#sign' ? (
-                signToken ? (
-                  <Link
-                    href={`/p/${proposalToken}/sign?st=${signToken}`}
-                    className="group inline-flex w-full items-center justify-center gap-2 rounded-[40px] py-2.5 px-5 text-sm font-medium text-foreground btn-primary transition-all"
-                  >
-                    {getButtonContent(action)}
-                  </Link>
-                ) : (
-                  <a
-                    href={`mailto:matt@antimatterai.com?subject=Avant%20Proposal%20%E2%80%94%20Sign%20Link%20Request`}
-                    className="group inline-flex w-full items-center justify-center gap-2 rounded-[40px] border border-accent/30 py-2.5 px-5 text-sm font-medium text-secondary transition-all hover:bg-accent/10"
-                  >
-                    <span>Request Sign Link</span>
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-foreground/10 group-hover:scale-110 transition-all">
-                      <Mail size={12} />
-                    </span>
-                  </a>
-                )
+                <Link
+                  href={signToken ? `/p/${proposalToken}/sign?st=${signToken}` : `/p/${proposalToken}/sign`}
+                  className="group inline-flex w-full items-center justify-center gap-2 rounded-[40px] py-2.5 px-5 text-sm font-medium text-foreground btn-primary transition-all"
+                >
+                  <span>Sign Now</span>
+                  <span className={cn(
+                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all duration-300 group-hover:scale-110',
+                    action.primary ? 'bg-white/20 group-hover:bg-white/30' : 'bg-foreground/10 group-hover:bg-foreground/20'
+                  )}>
+                    <ProposalIcon name="arrow-right" size={13} />
+                  </span>
+                </Link>
               ) : action.href.startsWith('mailto') || action.href.startsWith('http') ? (
                 <a
                   href={action.href}
