@@ -128,9 +128,13 @@ export function ProposalLayout({ proposal, proposalJson, signToken }: ProposalLa
 
         {/* Main */}
         <main className="min-w-0 flex-1">
-          {proposalJson.sections.map((section) => (
-            <div key={section.id}>{renderSection(section, proposal.public_token, signToken)}</div>
+          {proposalJson.sections.map((section, i) => (
+            <React.Fragment key={section.id}>
+              {i > 0 && <div className="section-divider" />}
+              {renderSection(section, proposal.public_token, signToken)}
+            </React.Fragment>
           ))}
+          <div className="section-divider" />
           <CapabilityMatrix />
           <footer className="border-t border-foreground/[0.06] px-6 py-10 text-center text-xs text-foreground/25">
             <p className="mb-1">

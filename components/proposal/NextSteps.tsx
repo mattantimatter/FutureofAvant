@@ -43,7 +43,7 @@ export function NextSteps({ content, proposalToken, signToken }: NextStepsProps)
       <div className="relative z-10 mx-auto max-w-5xl px-6">
         {/* Header */}
         <div className="mb-12 text-center">
-          <p className="mb-3 font-mono text-sm uppercase tracking-widest text-secondary">
+          <p className="mb-3 font-mono text-xs uppercase tracking-[0.2em] text-secondary">
             Next Steps
           </p>
           <h2 className="mb-4 text-4xl font-black tracking-tight text-white md:text-5xl">

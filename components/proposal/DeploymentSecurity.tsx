@@ -37,7 +37,7 @@ export function DeploymentSecurity({ content }: DeploymentSecurityProps) {
       <div className="mx-auto max-w-6xl px-6">
         {/* Header */}
         <div className="mb-12 text-center">
-          <p className="mb-3 font-mono text-sm uppercase tracking-widest text-secondary">
+          <p className="mb-3 font-mono text-xs uppercase tracking-[0.2em] text-secondary">
             Deployment & Security
           </p>
           <h2 className="mb-4 text-4xl font-black tracking-tight text-white md:text-5xl">

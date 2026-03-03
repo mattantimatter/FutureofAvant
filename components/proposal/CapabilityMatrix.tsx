@@ -37,7 +37,7 @@ interface CapabilityMatrixProps {
 
 export function CapabilityMatrix({ rows = DEFAULT_MATRIX }: CapabilityMatrixProps) {
   return (
-    <section id="section-comparison" className="py-16">
+    <section id="section-comparison" className="section-anchor proposal-section">
       <div className="mx-auto max-w-3xl px-6">
         <div className="mb-8 text-center">
           <p className="mb-2 font-mono text-xs uppercase tracking-widest text-secondary">Comparison</p>

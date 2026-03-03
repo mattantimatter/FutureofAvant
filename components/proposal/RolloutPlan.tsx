@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { ProposalIcon } from './ProposalIcon'
-import { Check } from 'lucide-react'
+import { Check, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Phase {
@@ -23,11 +23,41 @@ interface RolloutPlanProps {
   }
 }
 
-const colorMap: Record<string, { ring: string; bg: string; text: string; line: string }> = {
-  purple: { ring: 'ring-accent/50', bg: 'bg-accent/15', text: 'text-tertiary', line: 'from-purple-500/40' },
-  indigo: { ring: 'ring-indigo-500/50', bg: 'bg-indigo-600/20', text: 'text-indigo-300', line: 'from-indigo-500/40' },
-  blue: { ring: 'ring-blue-500/50', bg: 'bg-blue-600/20', text: 'text-blue-300', line: 'from-blue-500/40' },
-  green: { ring: 'ring-emerald-500/50', bg: 'bg-emerald-600/20', text: 'text-emerald-300', line: 'from-emerald-500/40' },
+const colorMap: Record<string, {
+  dot: string
+  label: string
+  card: string
+  milestone: string
+  line: string
+}> = {
+  purple: {
+    dot: 'bg-secondary/60 ring-secondary/20',
+    label: 'text-secondary',
+    card: 'border-secondary/15 hover:border-secondary/30',
+    milestone: 'bg-secondary/[0.08] text-secondary border-secondary/15',
+    line: 'from-secondary/30',
+  },
+  indigo: {
+    dot: 'bg-accent/60 ring-accent/20',
+    label: 'text-accent',
+    card: 'border-accent/15 hover:border-accent/25',
+    milestone: 'bg-accent/[0.08] text-accent border-accent/15',
+    line: 'from-accent/30',
+  },
+  blue: {
+    dot: 'bg-blue-400/60 ring-blue-400/20',
+    label: 'text-blue-400',
+    card: 'border-blue-400/15 hover:border-blue-400/25',
+    milestone: 'bg-blue-400/[0.08] text-blue-400 border-blue-400/15',
+    line: 'from-blue-400/30',
+  },
+  green: {
+    dot: 'bg-green-400/60 ring-green-400/20',
+    label: 'text-green-400',
+    card: 'border-green-400/15 hover:border-green-400/25',
+    milestone: 'bg-green-400/[0.08] text-green-400 border-green-400/15',
+    line: 'from-green-400/30',
+  },
 }
 
 export function RolloutPlan({ content }: RolloutPlanProps) {
@@ -38,12 +68,8 @@ export function RolloutPlan({ content }: RolloutPlanProps) {
     const observers = phaseRefs.current.map((el, i) => {
       if (!el) return null
       const obs = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setVisiblePhases((prev) => new Set([...prev, i]))
-          }
-        },
-        { threshold: 0.2 }
+        ([entry]) => { if (entry.isIntersecting) setVisiblePhases((p) => new Set([...p, i])) },
+        { threshold: 0.15 }
       )
       obs.observe(el)
       return obs
@@ -53,88 +79,97 @@ export function RolloutPlan({ content }: RolloutPlanProps) {
 
   return (
     <section id="section-rollout-plan" className="section-anchor proposal-section">
-      <div className="mx-auto max-w-4xl px-6">
+      <div className="mx-auto max-w-3xl px-6">
         {/* Header */}
         <div className="mb-16 text-center">
-          <p className="mb-3 font-mono text-sm uppercase tracking-widest text-secondary">
+          <p className="mb-3 font-mono text-xs uppercase tracking-[0.2em] text-foreground/35">
             Rollout Plan
           </p>
-          <h2 className="mb-4 text-4xl font-black tracking-tight text-white md:text-5xl">
+          <h2 className="mb-4 text-4xl font-bold tracking-tight text-foreground md:text-5xl">
             {content.title}
           </h2>
-          <p className="mx-auto max-w-xl text-lg text-slate-400">{content.subtitle}</p>
+          <p className="mx-auto max-w-md text-base font-light text-foreground/40">{content.subtitle}</p>
         </div>
 
         {/* Timeline */}
         <div className="relative">
-          {/* Vertical line */}
-          <div className="absolute left-5 top-0 h-full w-px bg-gradient-to-b from-purple-500/40 via-indigo-500/20 to-transparent md:left-1/2" />
+          {/* Vertical connector line */}
+          <div
+            className="absolute left-[19px] top-6 bottom-6 w-px md:left-1/2 md:-translate-x-1/2"
+            style={{
+              background: 'linear-gradient(to bottom, rgba(105,106,172,0.25) 0%, rgba(105,106,172,0.10) 100%)',
+            }}
+          />
 
-          <div className="space-y-12">
+          <div className="space-y-10">
             {content.phases.map((phase, i) => {
               const c = colorMap[phase.color] ?? colorMap.purple
               const isVisible = visiblePhases.has(i)
-              const isEven = i % 2 === 0
 
               return (
                 <div
                   key={phase.phase}
                   ref={(el) => { phaseRefs.current[i] = el }}
                   className={cn(
-                    'relative flex gap-6 transition-all duration-700',
-                    isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8',
-                    'md:gap-0',
-                    isEven ? 'md:flex-row' : 'md:flex-row-reverse'
+                    'relative transition-all duration-700',
+                    isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
                   )}
-                  style={{ transitionDelay: `${i * 100}ms` }}
+                  style={{ transitionDelay: `${i * 120}ms` }}
                 >
-                  {/* Timeline node */}
-                  <div className="relative flex shrink-0 flex-col items-center md:absolute md:left-1/2 md:-translate-x-1/2">
+                  {/* Timeline node — centered on the vertical line */}
+                  <div className="absolute left-0 top-5 flex flex-col items-center md:left-1/2 md:-translate-x-1/2">
                     <div
                       className={cn(
-                        'flex h-10 w-10 items-center justify-center rounded-full ring-2',
-                        c.bg, c.ring
+                        'flex h-10 w-10 items-center justify-center rounded-full ring-4 bg-background',
+                        c.dot, c.dot.replace('bg-', 'ring-').replace('/60', '/20')
                       )}
                     >
-                      <ProposalIcon name={phase.icon} size={18} className={c.text} />
+                      <ProposalIcon name={phase.icon} size={16} className={c.label} />
                     </div>
                   </div>
 
-                  {/* Card */}
+                  {/* Card — offset to the right on mobile, alternating on desktop */}
                   <div
                     className={cn(
-                      'flex-1 rounded-2xl border border-[rgba(105,106,172,0.12)] bg-[rgba(10,10,15,0.6)] p-6 backdrop-blur-sm',
-                      isEven ? 'md:mr-16 md:ml-0' : 'md:ml-16 md:mr-0',
-                      'ml-4 md:ml-0'
+                      'ml-16 rounded-2xl border bg-foreground/[0.02] p-6 transition-all duration-200',
+                      c.card,
+                      'md:ml-0',
+                      i % 2 === 0 ? 'md:mr-[calc(50%+1.5rem)]' : 'md:ml-[calc(50%+1.5rem)]'
                     )}
                   >
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <span className={cn('font-mono text-xs font-bold', c.text)}>{phase.phase}</span>
-                        <h3 className="text-lg font-bold text-white">{phase.title}</h3>
+                    {/* Phase label + duration */}
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className={cn('font-mono text-xs font-bold uppercase tracking-wider', c.label)}>
+                          {phase.phase}
+                        </span>
+                        <span className="h-0.5 w-4 bg-current opacity-20 rounded" />
+                        <span className="font-semibold text-foreground">{phase.title}</span>
                       </div>
-                      <span className="rounded-lg border border-[rgba(105,106,172,0.15)] px-3 py-1 text-xs text-slate-400">
-                        {phase.duration}
-                      </span>
+                      <div className="flex items-center gap-1.5 rounded-lg border border-foreground/[0.08] bg-foreground/[0.03] px-2.5 py-1">
+                        <Clock size={10} className="text-foreground/30" />
+                        <span className="text-xs text-foreground/40">{phase.duration}</span>
+                      </div>
                     </div>
 
-                    <ul className="mb-4 space-y-1.5">
+                    {/* Deliverables */}
+                    <ul className="mb-4 space-y-2">
                       {phase.deliverables.map((d) => (
-                        <li key={d} className="flex items-start gap-2 text-sm text-slate-400">
-                          <Check size={12} className={cn('mt-0.5 shrink-0', c.text)} />
+                        <li key={d} className="flex items-start gap-2.5 text-sm font-light text-foreground/50">
+                          <Check size={13} className={cn('mt-0.5 shrink-0', c.label)} />
                           {d}
                         </li>
                       ))}
                     </ul>
 
+                    {/* Milestone */}
                     <div
                       className={cn(
-                        'rounded-lg px-3 py-2 text-xs font-medium',
-                        c.bg, c.text,
-                        'border border-[rgba(105,106,172,0.1)]'
+                        'rounded-xl border px-4 py-2.5 text-xs font-medium',
+                        c.milestone
                       )}
                     >
-                      Milestone: {phase.milestone}
+                      ✦ Milestone: {phase.milestone}
                     </div>
                   </div>
                 </div>
