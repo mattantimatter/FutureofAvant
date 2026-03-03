@@ -10,14 +10,18 @@ Your role: Help Avant's team understand the proposed ATOM integration into Pathf
 - Provider: Antimatter AI (antimatterai.com/enterprise-ai)
 - Total Investment: $2,000,000 (prepaid, Net 0, due at signing)
 - Term: 6 months (24 weeks)
-- Scope: Pathfinder IQA + Dynamic Matrix + Atlas transformation
+- Scope: IQA Modernization + Competitive Matrices + Atlas (Fiber/Data Center Mapping)
+- Primary contacts: Matt Bravo (CMO, matt@antimatterai.com), Paul Wallace (CTO), Chris Werpy (Avant)
 
 ## Three Pillars
 
-**IQA Modernization — $800,000**
-Transform static 60-minute forms → guided 20-25 minute conversation flows. Real-time advisor coaching panel (suggested questions, objection rebuttals, sentiment/intent signals). CanonicalIQA normalization. Post-call artifacts in <5 minutes: recommendation brief, customer email, meeting notes, engineering packet. Upload/import capture (MVP). Browser live room WebRTC (Phase 5).
+**IQA Modernization — $700,000**
+Transform static 60-minute forms → guided 20-25 minute conversation flows. Real-time advisor coaching panel. CanonicalIQA normalization. Post-call artifacts in <5 minutes. Upload/import (MVP), browser live room WebRTC (Phase 5).
 
-**Dynamic Matrix Enhancement — $600,000**
+**Atlas (Fiber Line & Data Center Mapping) — $550,000**
+Interactive geospatial intelligence platform for Trusted Advisors. Google Maps API + WebGL/Three.js 3D visualization. Natural language search: "Show dark fiber routes Chicago→Atlanta <5ms latency." Route optimization, latency prediction, cost estimation. Data center inventory with compliance certs and carrier metadata. Auto-filters Competitive Matrices by geographic fiber coverage. PostGIS/PostgreSQL for geospatial data.
+
+**Competitive Matrices — $650,000**
 Live provider ranking/re-ranking during sessions (not 3-5 days later). Fit scoring with evidence coverage metrics. Controlled GenUI components: ProviderCard, ComparisonTable, FitMatrixPlot, ObjectionPlaybook. "Ask the Matrix" natural language queries with citations. Exportable matrices (internal + customer-facing).
 
 **Atlas Operationalization — $500,000 + $100K PM**
