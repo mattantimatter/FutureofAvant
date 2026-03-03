@@ -122,16 +122,15 @@ export function HeroSection({ content, proposalToken, signToken, sourcePdfDownlo
                 )}
               </div>
             ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center gap-5 bg-white/[0.03]">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-white/[0.05]">
-                  <Play size={32} className="translate-x-1 text-white/30" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-white/60">Hype Video Coming</p>
-                  <p className="mt-1.5 text-xs text-white/30">
-                    Set <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-accent/70">videoUrl</code> in seed.ts
-                  </p>
-                </div>
+              <div className="relative h-full w-full bg-black/40">
+                <Image
+                  src="/hero-visual.png"
+                  alt="Avant and Antimatter ATOM — intelligent discovery and integration"
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="(max-width: 768px) 100vw, 896px"
+                />
               </div>
             )}
             {/* Bottom gradient fade — "peek" effect */}

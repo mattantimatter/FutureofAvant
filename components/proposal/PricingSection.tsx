@@ -97,7 +97,7 @@ export function PricingSection({ content, proposalToken, signToken }: PricingSec
                         href={tier.exampleUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 rounded-lg border border-accent/20 bg-accent/[0.06] px-2.5 py-1 text-xs font-medium text-secondary transition-all hover:border-accent/40 hover:bg-accent/10 hover:text-foreground"
+                        className="flex items-center gap-1 rounded-lg border border-accent/50 bg-accent/20 px-2.5 py-1 text-xs font-semibold text-secondary shadow-[0_0_16px_rgba(105,106,172,0.4),0_0_32px_rgba(105,106,172,0.2)] transition-all hover:border-accent hover:bg-accent/30 hover:shadow-[0_0_20px_rgba(105,106,172,0.5),0_0_40px_rgba(105,106,172,0.25)] hover:text-foreground"
                       >
                         <ExternalLink size={10} />
                         {tier.exampleLabel ?? 'View Example'}

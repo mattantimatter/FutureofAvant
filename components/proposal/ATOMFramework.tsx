@@ -112,7 +112,7 @@ export function ATOMFramework({ content }: ATOMFrameworkProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-1 rounded-lg border border-accent/20 bg-accent/[0.06] px-2 py-1 text-[10px] font-medium text-secondary transition-all hover:border-accent/40 hover:bg-accent/10 hover:text-foreground"
+                        className="flex items-center gap-1 rounded-lg border border-accent/50 bg-accent/20 px-2 py-1 text-[10px] font-semibold text-secondary shadow-[0_0_16px_rgba(105,106,172,0.4),0_0_32px_rgba(105,106,172,0.2)] transition-all hover:border-accent hover:bg-accent/30 hover:shadow-[0_0_20px_rgba(105,106,172,0.5),0_0_40px_rgba(105,106,172,0.25)] hover:text-foreground"
                       >
                         <ExternalLink size={9} />
                         {pillar.exampleLabel ?? 'View Example'}
