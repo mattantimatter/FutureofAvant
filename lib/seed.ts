@@ -597,7 +597,7 @@ By signing, I confirm I have the authority to enter into this agreement on behal
         contacts: [
           { name: 'Matt Bravo', role: 'CMO, Antimatter AI', email: 'matt@antimatterai.com' },
           { name: 'Paul Wallace', role: 'CTO, Antimatter AI', email: 'paul@antimatterai.com' },
-          { name: 'Ben O\'Leary', role: 'Co-Founder & Strategic Architect, Antimatter AI', email: 'ben@antimatterai.com' },
+          { name: 'Ben O\'Leary', role: 'CQO, Antimatter AI', email: 'ben@antimatterai.com' },
         ],
         validUntil: 'April 1, 2026',
         urgencyItems: [

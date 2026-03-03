@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Copy, ExternalLink, Plus, Upload, Download,
   Eye, CheckCircle, Clock, Send, RefreshCw, Mail, ChevronDown,
-  ChevronUp, Layers, Trash2,
+  ChevronUp, Layers, Trash2, RotateCcw,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
@@ -70,6 +70,7 @@ export function ProposalManageClient({
   const [auditExpanded, setAuditExpanded] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [reseeding, setReseeding] = useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const viewerUrl = `${SITE_URL}/p/${proposal.public_token}`
@@ -128,6 +129,21 @@ export function ProposalManageClient({
       else toast(data.error ?? 'Failed', 'error')
     } catch { toast('Failed to add signer', 'error') }
     finally { setAddingSignerLoading(false) }
+  }
+
+  const handleReseed = async () => {
+    setReseeding(true)
+    try {
+      const res = await fetch(`/api/admin/proposals/${proposal.id}/reseed`, { method: 'POST' })
+      const data = await res.json()
+      if (data.success) {
+        toast('Proposal content updated with latest seed!')
+        router.refresh()
+      } else {
+        toast(data.error ?? 'Reseed failed', 'error')
+      }
+    } catch { toast('Reseed failed', 'error') }
+    finally { setReseeding(false) }
   }
 
   const handleDelete = async () => {
@@ -206,6 +222,15 @@ export function ProposalManageClient({
               <Send size={13} />Mark Sent
             </button>
           )}
+          <button
+            onClick={handleReseed}
+            disabled={reseeding}
+            title="Refresh proposal content from latest seed (contacts, sections, pricing)"
+            className="flex items-center gap-1.5 rounded-lg border border-foreground/[0.08] px-3 py-2 text-xs text-foreground/40 transition-all hover:border-foreground/20 hover:text-foreground disabled:opacity-40"
+          >
+            <RotateCcw size={13} className={reseeding ? 'animate-spin' : ''} />
+            {reseeding ? 'Refreshing...' : 'Refresh Content'}
+          </button>
           {!deleteConfirm ? (
             <button onClick={() => setDeleteConfirm(true)}
               className="flex items-center gap-1.5 rounded-lg border border-red-500/15 px-3 py-2 text-xs text-red-400/60 transition-all hover:border-red-500/30 hover:text-red-400">
