@@ -430,6 +430,8 @@ By signing, I confirm I have the authority to enter into this agreement on behal
             price: '$700,000',
             period: 'included in $2M total',
             badge: 'Pillar 1',
+            exampleUrl: 'https://www.antimatterai.com/atom-intentiq',
+            exampleLabel: 'See IntentIQ Demo',
             description: 'Agentic discovery engine. Guided conversation flows, coaching panel, CanonicalIQA schema, artifact generation, session-centric architecture.',
             features: [
               'Guided IQA flows for all 25 categories',
@@ -448,6 +450,8 @@ By signing, I confirm I have the authority to enter into this agreement on behal
             price: '$650,000',
             period: 'included in $2M total',
             badge: 'Pillar 2 — Core',
+            exampleUrl: 'https://www.antimatterai.com/resources/vendor-matrix',
+            exampleLabel: 'See Vendor Matrix',
             description: 'Real-time provider comparison. Live ranking, fit scoring, controlled GenUI, "Ask the Matrix" interface, Atlas geographic filtering.',
             features: [
               'Live provider ranking and re-ranking',

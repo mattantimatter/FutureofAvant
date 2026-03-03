@@ -1,9 +1,8 @@
 'use client'
 
 import React from 'react'
-import { Check, Star } from 'lucide-react'
+import { Check, Star, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -17,6 +16,8 @@ interface PricingTier {
   features: string[]
   cta: string
   highlight: boolean
+  exampleUrl?: string
+  exampleLabel?: string
 }
 
 interface PaymentScheduleItem {
@@ -85,14 +86,27 @@ export function PricingSection({ content, proposalToken, signToken }: PricingSec
               )}
 
               <div className="p-6">
-                {/* Badge */}
+                {/* Badge + Example link */}
                 <div className="mb-4 flex items-center justify-between">
                   <Badge variant={tier.highlight ? 'accent' : 'muted'} size="sm">
                     {tier.badge}
                   </Badge>
-                  {tier.highlight && (
-                    <Star size={14} className="text-secondary" fill="currentColor" />
-                  )}
+                  <div className="flex items-center gap-2">
+                    {tier.exampleUrl && (
+                      <a
+                        href={tier.exampleUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 rounded-lg border border-accent/20 bg-accent/[0.06] px-2.5 py-1 text-xs font-medium text-secondary transition-all hover:border-accent/40 hover:bg-accent/10 hover:text-foreground"
+                      >
+                        <ExternalLink size={10} />
+                        {tier.exampleLabel ?? 'View Example'}
+                      </a>
+                    )}
+                    {tier.highlight && (
+                      <Star size={14} className="text-secondary" fill="currentColor" />
+                    )}
+                  </div>
                 </div>
 
                 {/* Name + Price */}
